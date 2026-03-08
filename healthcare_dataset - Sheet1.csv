@@ -1,0 +1,3 @@
+fever,cough,fatigue,headache,disease
+1,1,0,1,Flu
+0,1,1,0,Cold
