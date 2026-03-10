@@ -63,18 +63,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final prefs = await SharedPreferences.getInstance();
+    final argUserName = (args?['userName'] as String?)?.trim() ?? '';
+    final argUserEmail = (args?['userEmail'] as String?)?.trim() ?? '';
+    final savedEmail = prefs.getString(_emailKey)?.trim() ?? '';
+    final bool isDifferentUser = argUserEmail.isNotEmpty && argUserEmail != savedEmail;
 
     if (!mounted) return;
     setState(() {
-      _nameController.text = prefs.getString(_nameKey) ?? (args?['userName'] as String? ?? '');
-      _emailController.text = prefs.getString(_emailKey) ?? (args?['userEmail'] as String? ?? '');
-      _phoneController.text = prefs.getString(_phoneKey) ?? '';
-      _ageController.text = prefs.getString(_ageKey) ?? '';
-      _bloodGroupController.text = prefs.getString(_bloodGroupKey) ?? '';
-      _emergencyController.text = prefs.getString(_emergencyKey) ?? '';
-      _imagePath = prefs.getString(_imagePathKey);
-      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
-      _shareReportsWithDoctor = prefs.getBool(_shareReportsKey) ?? false;
+      _nameController.text = isDifferentUser
+          ? argUserName
+          : (prefs.getString(_nameKey) ?? argUserName);
+      _emailController.text = isDifferentUser
+          ? argUserEmail
+          : (prefs.getString(_emailKey) ?? argUserEmail);
+      _phoneController.text = isDifferentUser ? '' : (prefs.getString(_phoneKey) ?? '');
+      _ageController.text = isDifferentUser ? '' : (prefs.getString(_ageKey) ?? '');
+      _bloodGroupController.text = isDifferentUser ? '' : (prefs.getString(_bloodGroupKey) ?? '');
+      _emergencyController.text = isDifferentUser ? '' : (prefs.getString(_emergencyKey) ?? '');
+      _imagePath = isDifferentUser ? null : prefs.getString(_imagePathKey);
+      _notificationsEnabled = isDifferentUser ? true : (prefs.getBool(_notificationsKey) ?? true);
+      _shareReportsWithDoctor =
+          isDifferentUser ? false : (prefs.getBool(_shareReportsKey) ?? false);
       _didLoad = true;
     });
   }

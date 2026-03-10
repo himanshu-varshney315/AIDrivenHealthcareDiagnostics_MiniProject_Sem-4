@@ -1,16 +1,30 @@
-# frontend_flutter
+# Frontend Flutter
 
-A new Flutter project.
+Flutter client for the healthcare diagnostics project.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Splash, login, and signup flow
+- Dashboard and profile screens
+- PDF medical report selection and upload
+- Backend API integration for authentication and report analysis
 
-A few resources to get you started if this is your first Flutter project:
+## Run
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## API Base URL
+
+The app uses:
+
+- `http://10.0.2.2:5000` on Android emulator
+- `http://127.0.0.1:5000` on web and desktop
+
+Override with:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://your-server:5000
+```

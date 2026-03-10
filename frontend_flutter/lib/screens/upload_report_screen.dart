@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p; // Add this for robust path handling
 import '../services/api_service.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -73,8 +72,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             const SizedBox(height: 20),
             if (selectedFile != null)
-            // Uses 'path' package for cross-platform filename extraction
-              Text(p.basename(selectedFile!.path),
+              Text(selectedFile!.uri.pathSegments.last,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 30),
             ElevatedButton(

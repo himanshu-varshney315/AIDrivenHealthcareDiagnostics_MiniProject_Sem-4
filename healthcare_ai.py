@@ -1,4 +1,5 @@
-pip install pandas scikit-learn shap transformers torch
+# Install dependencies before running:
+# pip install pandas scikit-learn shap transformers torch
 
 import pandas as pd
 import shap
@@ -8,7 +9,7 @@ from transformers import pipeline
 # ----------------------------
 # here we load data set from frontend 
 # ----------------------------
-data = pd.read_csv("/content/healthcare_dataset - Sheet1.csv")
+data = pd.read_csv("healthcare_dataset - Sheet1.csv")
 
 X = data.drop("disease", axis=1)
 y = data["disease"]
