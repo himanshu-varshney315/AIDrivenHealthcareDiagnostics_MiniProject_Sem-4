@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import 'find_clinics_screen.dart';
+import 'system_log_screen.dart';
 import 'upload_report_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -34,15 +36,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final argUserName = (args?['userName'] as String?)?.trim();
     final argUserEmail = (args?['userEmail'] as String?)?.trim();
+    final savedUserName = prefs.getString(_profileNameKey)?.trim();
+    final savedUserEmail = prefs.getString(_profileEmailKey)?.trim();
+    final hasRouteUser = argUserEmail != null && argUserEmail.isNotEmpty;
+    final resolvedUserName = hasRouteUser
+        ? ((argUserName == null || argUserName.isEmpty) ? "User Name" : argUserName)
+        : ((savedUserName != null && savedUserName.isNotEmpty) ? savedUserName : "User Name");
+    final resolvedUserEmail = hasRouteUser
+        ? argUserEmail
+        : ((savedUserEmail != null && savedUserEmail.isNotEmpty) ? savedUserEmail : "");
 
     if (!mounted) return;
     setState(() {
-      _userName = (prefs.getString(_profileNameKey)?.trim().isNotEmpty == true)
-          ? prefs.getString(_profileNameKey)!.trim()
-          : ((argUserName == null || argUserName.isEmpty) ? "User Name" : argUserName);
-      _userEmail = (prefs.getString(_profileEmailKey)?.trim().isNotEmpty == true)
-          ? prefs.getString(_profileEmailKey)!.trim()
-          : (argUserEmail ?? "");
+      _userName = resolvedUserName;
+      _userEmail = resolvedUserEmail;
       _profileImagePath = prefs.getString(_profileImagePathKey);
     });
   }
@@ -93,18 +100,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       _ActionItem(
-                        icon: Icons.coronavirus,
-                        label: "Symptom\nLog",
+                        icon: Icons.monitor_heart_outlined,
+                        label: "System\nLog",
                         iconColor: const Color(0xFFE87079),
                         bgColor: const Color(0xFFFFE7EA),
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SystemLogScreen()),
+                        ),
                       ),
                       _ActionItem(
                         icon: Icons.add,
                         label: "Find\nClinics",
                         iconColor: const Color(0xFF2BC57B),
                         bgColor: const Color(0xFFE0F8EC),
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FindClinicsScreen()),
+                        ),
                       ),
                       _ActionItem(
                         icon: Icons.person,
