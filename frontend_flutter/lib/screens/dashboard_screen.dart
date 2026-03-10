@@ -1,6 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
+
 import 'upload_report_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -11,8 +13,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String _userName = "User Name";
-  String _userEmail = "";
+  String _userName = 'User Name';
+  String _userEmail = '';
   String? _profileImagePath;
   bool _isInitialized = false;
 
@@ -29,7 +31,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadDashboardData() async {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final prefs = await SharedPreferences.getInstance();
 
     final argUserName = (args?['userName'] as String?)?.trim();
@@ -39,234 +42,306 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _userName = (prefs.getString(_profileNameKey)?.trim().isNotEmpty == true)
           ? prefs.getString(_profileNameKey)!.trim()
-          : ((argUserName == null || argUserName.isEmpty) ? "User Name" : argUserName);
-      _userEmail = (prefs.getString(_profileEmailKey)?.trim().isNotEmpty == true)
+          : ((argUserName == null || argUserName.isEmpty)
+                ? 'User Name'
+                : argUserName);
+      _userEmail =
+          (prefs.getString(_profileEmailKey)?.trim().isNotEmpty == true)
           ? prefs.getString(_profileEmailKey)!.trim()
-          : (argUserEmail ?? "");
+          : (argUserEmail ?? '');
       _profileImagePath = prefs.getString(_profileImagePathKey);
     });
   }
 
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  Future<void> _openProfile() async {
+    await Navigator.pushNamed(
+      context,
+      '/profile',
+      arguments: {'userName': _userName, 'userEmail': _userEmail},
+    );
+    await _loadDashboardData();
+  }
+
+  void _showComingSoon(String label) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label is coming soon')));
+  }
+
   @override
   Widget build(BuildContext context) {
-    const double steps = 6450;
-    const double goal = 10000;
+    const int steps = 8450;
+    const int goal = 10000;
+    const String sleepDuration = '7h 15m';
     final double stepProgress = (steps / goal).clamp(0, 1);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TopHeader(
-              userName: _userName,
-              profileImagePath: _profileImagePath,
-              onLogout: () => Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 22),
-                  const Text(
-                    "Health At a Glance",
-                    style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _ActionItem(
-                        icon: Icons.upload_file_rounded,
-                        label: "Upload\nReport",
-                        iconColor: const Color(0xFFF0A247),
-                        bgColor: const Color(0xFFFFEEDA),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ReportScreen()),
+      backgroundColor: const Color(0xFFF1F4F8),
+      bottomNavigationBar: _DashboardBottomBar(
+        profileImagePath: _profileImagePath,
+        onProfileTap: _openProfile,
+        onItemTap: _showComingSoon,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFE7F3FF), Color(0xFFF4EDFF), Color(0xFFF8F9FC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Health Dashboard',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      _ActionItem(
-                        icon: Icons.coronavirus,
-                        label: "Symptom\nLog",
-                        iconColor: const Color(0xFFE87079),
-                        bgColor: const Color(0xFFFFE7EA),
-                        onTap: () {},
-                      ),
-                      _ActionItem(
-                        icon: Icons.add,
-                        label: "Find\nClinics",
-                        iconColor: const Color(0xFF2BC57B),
-                        bgColor: const Color(0xFFE0F8EC),
-                        onTap: () {},
-                      ),
-                      _ActionItem(
-                        icon: Icons.person,
-                        label: "My\nProfile",
-                        iconColor: const Color(0xFFAF5BE9),
-                        bgColor: const Color(0xFFF2E8FB),
-                        profileImagePath: _profileImagePath,
-                        onTap: () async {
-                          await Navigator.pushNamed(
-                          context,
-                          '/profile',
-                          arguments: {
-                            'userName': _userName,
-                            'userEmail': _userEmail,
-                          },
-                        );
-                          await _loadDashboardData();
-                        },
+                    ),
+                    _HeaderActionButton(
+                      icon: Icons.share_outlined,
+                      onTap: () => _showComingSoon('Share'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Welcome back',
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_greeting()},\n$_userName!',
+                  style: const TextStyle(
+                    fontSize: 46,
+                    height: 1.02,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'How are you today?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.black.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F5F7).withValues(alpha: 0.96),
+                    borderRadius: BorderRadius.circular(36),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x15000000),
+                        blurRadius: 24,
+                        offset: Offset(0, 14),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 26),
-                  const Text(
-                    "Your Stats",
-                    style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _StepsCard(
-                          steps: steps.toInt(),
-                          goal: goal.toInt(),
-                          progress: stepProgress,
+                      const Text(
+                        'Recommended for you',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: _SleepCard(),
+                      const SizedBox(height: 16),
+                      const _SuggestionCard(),
+                      const SizedBox(height: 22),
+                      Wrap(
+                        spacing: 26,
+                        runSpacing: 16,
+                        children: [
+                          _QuickAction(
+                            icon: Icons.upload_file_rounded,
+                            label: 'Upload\nReport',
+                            iconColor: const Color(0xFFF0A247),
+                            backgroundColor: const Color(0xFFFFEEDA),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ReportScreen(),
+                              ),
+                            ),
+                          ),
+                          _QuickAction(
+                            icon: Icons.monitor_heart_outlined,
+                            label: 'System\nLog',
+                            iconColor: const Color(0xFFE88A99),
+                            backgroundColor: const Color(0xFFFFE8EE),
+                            onTap: () => _showComingSoon('System Log'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      const Text(
+                        'Your Key Stats',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _StepsCard(
+                              steps: steps,
+                              goal: goal,
+                              progress: stepProgress,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: _SleepCard(durationLabel: sleepDuration),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  const _HydrationCard(value: 0.74),
-                  const SizedBox(height: 24),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TopHeader extends StatelessWidget {
-  final String userName;
-  final String? profileImagePath;
-  final VoidCallback onLogout;
+class _HeaderActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
 
-  const _TopHeader({
-    required this.userName,
-    required this.profileImagePath,
-    required this.onLogout,
-  });
+  const _HeaderActionButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.72),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: SizedBox(
+          width: 62,
+          height: 62,
+          child: Icon(icon, size: 28, color: const Color(0xFF1F2430)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  const _SuggestionCard();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 58, 24, 42),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFA1DFF6), Color(0xFF94B8FF), Color(0xFFC9B2F6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(120),
-          bottomRight: Radius.circular(120),
-        ),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F3F8),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 16,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
-      child: Column(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  "Health Dashboard",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          Icon(Icons.auto_awesome_outlined, color: Color(0xFF9BA0AE), size: 24),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Health AI Suggestion:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
-              ),
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  shape: BoxShape.circle,
+                SizedBox(height: 8),
+                Text(
+                  'Your sleep pattern is improving. Try to maintain the same bedtime tonight for optimal recovery.',
+                  style: TextStyle(fontSize: 16, height: 1.22),
                 ),
-                child: IconButton(
-                  icon: const Icon(Icons.logout_rounded),
-                  tooltip: "Logout",
-                  onPressed: onLogout,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 26),
-          const Text("Welcome back,", style: TextStyle(fontSize: 22)),
-          const SizedBox(height: 8),
-          Text(
-            "Good morning,\n$userName!",
-            style: const TextStyle(fontSize: 52, height: 1.05, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          const Text("How are you today?", style: TextStyle(fontSize: 22)),
         ],
       ),
     );
   }
 }
 
-class _ActionItem extends StatelessWidget {
+class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color iconColor;
-  final Color bgColor;
-  final String? profileImagePath;
+  final Color backgroundColor;
   final VoidCallback onTap;
 
-  const _ActionItem({
+  const _QuickAction({
     required this.icon,
     required this.label,
     required this.iconColor,
-    required this.bgColor,
-    this.profileImagePath,
+    required this.backgroundColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasProfileImage = profileImagePath != null && File(profileImagePath!).existsSync();
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        width: 76,
+        width: 96,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 27,
-              backgroundColor: bgColor,
-              backgroundImage: hasProfileImage ? FileImage(File(profileImagePath!)) : null,
-              child: hasProfileImage ? null : Icon(icon, color: iconColor, size: 30),
+              radius: 28,
+              backgroundColor: backgroundColor,
+              child: Icon(icon, color: iconColor, size: 30),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.15),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+                height: 1.08,
+              ),
             ),
           ],
         ),
@@ -289,85 +364,165 @@ class _StepsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: const [
-          BoxShadow(color: Color(0x19000000), blurRadius: 14, offset: Offset(0, 7)),
-        ],
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            width: 160,
-            height: 160,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 10,
-                  backgroundColor: const Color(0xFFE0F4E8),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF39C978)),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.directions_walk, color: Color(0xFF39C978), size: 28),
-                    const SizedBox(height: 4),
-                    Text("$steps", style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
-                    const Text("steps", style: TextStyle(fontSize: 18)),
-                  ],
-                ),
-              ],
-            ),
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 10),
           ),
-          const SizedBox(height: 10),
-          Text("Step/$goal", style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SleepCard extends StatelessWidget {
-  const _SleepCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(color: Color(0x19000000), blurRadius: 14, offset: Offset(0, 7)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               CircleAvatar(
-                radius: 24,
-                backgroundColor: Color(0xFFF0E4FF),
-                child: Icon(Icons.nightlight_round, color: Color(0xFF8E5DD7), size: 26),
+                radius: 21,
+                backgroundColor: Color(0xFFE8F2FF),
+                child: Icon(
+                  Icons.directions_walk_rounded,
+                  color: Color(0xFF5798E9),
+                ),
               ),
               SizedBox(width: 10),
-              Text("Sleep", style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600)),
+              Text(
+                'Steps',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-          const SizedBox(height: 72, width: double.infinity, child: _SleepWave()),
-          const SizedBox(height: 8),
+          Center(
+            child: SizedBox(
+              width: 132,
+              height: 132,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 132,
+                    height: 132,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 10,
+                      backgroundColor: const Color(0xFFE6E8ED),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF5E88F4),
+                      ),
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _formatSteps(steps),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'steps',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF555A66),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(color: Colors.black),
+              children: [
+                TextSpan(
+                  text: _formatSteps(steps),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: ' / ${_formatSteps(goal)}',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF707582),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatSteps(int value) {
+    final text = value.toString();
+    if (text.length <= 3) return text;
+    final start = text.substring(0, text.length - 3);
+    final end = text.substring(text.length - 3);
+    return '$start,$end';
+  }
+}
+
+class _SleepCard extends StatelessWidget {
+  final String durationLabel;
+
+  const _SleepCard({required this.durationLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("00 am", style: TextStyle(fontSize: 18)),
-              Text("01 am", style: TextStyle(fontSize: 18)),
+              CircleAvatar(
+                radius: 21,
+                backgroundColor: Color(0xFFF1E8FF),
+                child: Icon(Icons.nightlight_round, color: Color(0xFF9B6AE4)),
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Sleep',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+              ),
             ],
+          ),
+          const SizedBox(height: 18),
+          const SizedBox(
+            height: 100,
+            width: double.infinity,
+            child: _SleepChart(),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            durationLabel,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -375,57 +530,55 @@ class _SleepCard extends StatelessWidget {
   }
 }
 
-class _SleepWave extends StatelessWidget {
-  const _SleepWave();
+class _SleepChart extends StatelessWidget {
+  const _SleepChart();
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SleepWavePainter(),
-    );
+    return CustomPaint(painter: _SleepChartPainter());
   }
 }
 
-class _SleepWavePainter extends CustomPainter {
+class _SleepChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint linePaint = Paint()
-      ..color = const Color(0xFF8E5DD7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
+    final guidePaint = Paint()
+      ..color = const Color(0xFFE5E6EB)
+      ..strokeWidth = 1;
+    final purplePaint = Paint()
+      ..color = const Color(0xFF8C59D5)
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+    final bluePaint = Paint()
+      ..color = const Color(0xFF5AB0F1)
+      ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
 
-    final Path path = Path()
-      ..moveTo(0, size.height * 0.72)
-      ..quadraticBezierTo(
-        size.width * 0.2,
-        size.height * 0.92,
-        size.width * 0.42,
-        size.height * 0.38,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.62,
-        size.height * 0.14,
-        size.width * 0.82,
-        size.height * 0.55,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.9,
-        size.height * 0.72,
-        size.width,
-        size.height * 0.45,
-      );
-
-    canvas.drawPath(path, linePaint);
-    final bars = <double>[0.78, 0.92, 0.55, 0.94, 0.42, 0.96, 0.50];
-    final dxStep = size.width / (bars.length - 1);
+    final bars = <double>[
+      0.20,
+      0.62,
+      0.44,
+      0.71,
+      0.35,
+      0.82,
+      0.49,
+      0.28,
+      0.58,
+      0.33,
+      0.66,
+      0.30,
+    ];
+    final step = size.width / (bars.length - 1);
 
     for (var i = 0; i < bars.length; i++) {
-      final x = i * dxStep;
+      final dx = i * step;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), guidePaint);
+
+      final top = size.height * bars[i];
       canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x, size.height * bars[i]),
-        linePaint,
+        Offset(dx, top),
+        Offset(dx, size.height * 0.94),
+        i.isEven ? purplePaint : bluePaint,
       );
     }
   }
@@ -434,52 +587,143 @@ class _SleepWavePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _HydrationCard extends StatelessWidget {
-  final double value;
+class _DashboardBottomBar extends StatelessWidget {
+  final String? profileImagePath;
+  final VoidCallback onProfileTap;
+  final ValueChanged<String> onItemTap;
 
-  const _HydrationCard({required this.value});
+  const _DashboardBottomBar({
+    required this.profileImagePath,
+    required this.onProfileTap,
+    required this.onItemTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(color: Color(0x19000000), blurRadius: 14, offset: Offset(0, 7)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 20,
+            offset: Offset(0, -8),
+          ),
         ],
       ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: Color(0xFFDEF4FF),
-            child: Icon(Icons.water_drop_rounded, color: Color(0xFF5EC9E7), size: 34),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Hydration Level",
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    minHeight: 14,
-                    value: value,
-                    color: const Color(0xFF80D6EE),
-                    backgroundColor: const Color(0xFFCDEFFD),
-                  ),
-                ),
-              ],
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: _BottomBarItem(
+                label: 'Dashboard',
+                icon: Icons.home_outlined,
+                selected: true,
+                onTap: () {},
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: _BottomBarItem(
+                label: 'Health AI',
+                icon: Icons.smart_toy_outlined,
+                accentColor: const Color(0xFF7F74D8),
+                onTap: () => onItemTap('Health AI'),
+              ),
+            ),
+            Expanded(
+              child: _BottomBarItem(
+                label: 'Analytics',
+                icon: Icons.bar_chart_rounded,
+                onTap: () => onItemTap('Analytics'),
+              ),
+            ),
+            Expanded(
+              child: _BottomBarItem(
+                label: 'Clinics',
+                icon: Icons.add_location_alt_outlined,
+                onTap: () => onItemTap('Clinics'),
+              ),
+            ),
+            Expanded(
+              child: _BottomBarItem(
+                label: 'My Profile',
+                icon: Icons.person_outline_rounded,
+                profileImagePath: profileImagePath,
+                onTap: onProfileTap,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomBarItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final String? profileImagePath;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _BottomBarItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.selected = false,
+    this.profileImagePath,
+    this.accentColor = const Color(0xFF646A76),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasProfileImage =
+        profileImagePath != null && File(profileImagePath!).existsSync();
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 34,
+              height: 4,
+              decoration: BoxDecoration(
+                color: selected ? Colors.black : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (hasProfileImage)
+              CircleAvatar(
+                radius: 18,
+                backgroundImage: FileImage(File(profileImagePath!)),
+              )
+            else
+              Icon(
+                icon,
+                color: selected ? Colors.black : accentColor,
+                size: 28,
+              ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? Colors.black : const Color(0xFF3F4450),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
