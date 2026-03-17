@@ -1,0 +1,16 @@
+# Python cache and virtualenv artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# Local backend runtime data
+backend/instance/database.db
+backend/uploads/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

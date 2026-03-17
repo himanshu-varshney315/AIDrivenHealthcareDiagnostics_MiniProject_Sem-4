@@ -1,65 +1,84 @@
-# AI-Driven Healthcare Diagnostics Using Generative and Explainable AI
-This project is an AI-driven healthcare diagnostic system that allows users to upload medical reports and receive preliminary health insights using machine learning. 
+# AI-Driven Healthcare Diagnostics
 
-The system consists of:
-- Flutter mobile application for the user interface
-- Flask backend API
-- Machine learning model for diagnosis prediction
+This project combines a Flutter frontend with a Flask backend for healthcare report intake and rule-based risk analysis. Users can sign up, log in, upload PDF medical reports, and receive a simple risk classification with extracted risk factors.
+
+## Current Scope
+
+- Flutter app for signup, login, dashboard, profile, and PDF report upload
+- Flask API with SQLite-based user storage
+- PDF text extraction using PyMuPDF
+- Rule-based health risk analysis from extracted report text
 
 ## Project Structure
 
-AIHealthcareProject
-│
-├── frontend_flutter    # Flutter mobile application
-├── backend             # Flask backend API
-├── Assets              # Images and resources
-├── README.md           # Project documentation
+```text
+Mini/
+|-- backend/              Flask API, database, routes, services
+|-- frontend_flutter/     Flutter application
+|-- Assets/               Design assets
+|-- healthcare_ai.py      Standalone ML experiment script
+|-- healthcare_dataset - Sheet1.csv
+`-- README.md
+```
 
-## Technologies Used
+## Backend
 
-- Flutter
-- Python
-- Flask
-- Machine Learning
-- REST API
-- Git & GitHub
+Key endpoints:
 
-## Features
+- `POST /signup`
+- `POST /login`
+- `POST /upload-report`
 
-- Upload medical report
-- AI-based disease prediction
-- User-friendly mobile interface
-- Secure backend API
+Run locally:
 
-## Installation
-
-### Backend
-1. Navigate to backend folder
-2. Install dependencies
-
+```bash
+cd backend
 pip install -r requirements.txt
-
-3. Run the Flask server
-
 python app.py
+```
 
+The API runs on `http://127.0.0.1:5000` by default.
 
-### Frontend
-1. Open frontend_flutter folder
-2. Run Flutter app
+Set a stronger JWT secret in production:
 
+```bash
+set JWT_SECRET_KEY=replace-with-a-long-random-secret
+python app.py
+```
+
+## Frontend
+
+Run locally:
+
+```bash
+cd frontend_flutter
 flutter pub get
 flutter run
+```
+
+Default API base URLs:
+
+- Android emulator: `http://10.0.2.2:5000`
+- Windows/Web/local desktop: `http://127.0.0.1:5000`
+
+You can override this at build or run time with `--dart-define=API_BASE_URL=...`.
+
+## Validation
+
+The project was checked with:
+
+- `flutter analyze`
+- `flutter test`
+- `python -m compileall backend healthcare_ai.py`
+- Flask smoke tests for signup, login, and upload validation
+
+## Notes
+
+- `healthcare_ai.py` is a separate experimental script and is not wired into the Flask API.
+- The backend currently uses a local SQLite database file for development.
 
 ## Contributors
 
 - Aditya Pratap
 - Himanshu Gupta
 - Piyush Kumar
-
-## Future Improvements
-
-- More accurate ML models
-- Integration with hospital databases
-- Real-time health monitoring
-

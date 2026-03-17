@@ -7,6 +7,8 @@ import 'screens/dashboard_screen.dart';
 import 'screens/clinics_screen.dart';
 import 'screens/health_ai_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/find_clinics_screen.dart';
+import 'screens/system_log_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,6 +35,8 @@ class MyApp extends StatelessWidget {
         '/clinics': (context) => const ClinicsScreen(),
         '/health-ai': (context) => const HealthAiScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/find-clinics': (context) => const FindClinicsScreen(),
+        '/system-log': (context) => const SystemLogScreen(),
       },
 
       theme: ThemeData(primarySwatch: Colors.blue),

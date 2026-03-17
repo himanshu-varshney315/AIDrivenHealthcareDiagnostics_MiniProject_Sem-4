@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -10,7 +12,10 @@ from routes.report_routes import report_bp
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-app.config["JWT_SECRET_KEY"] = "secret-key"
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY",
+    "dev-jwt-secret-key-change-me-32chars",
+)
 
 CORS(app)
 
