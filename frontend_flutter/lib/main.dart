@@ -4,6 +4,8 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/clinics_screen.dart';
+import 'screens/health_ai_screen.dart';
 import 'screens/profile_screen.dart';
 
 void main() {
@@ -28,12 +30,12 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
         '/dashboard': (context) => DashboardScreen(),
+        '/clinics': (context) => const ClinicsScreen(),
+        '/health-ai': (context) => const HealthAiScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
 
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
     );
   }
 }

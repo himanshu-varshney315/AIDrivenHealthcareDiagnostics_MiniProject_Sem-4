@@ -1,0 +1,61 @@
+text,label
+"fasting blood sugar 182 mg dl, hba1c 8.1, frequent urination, excessive thirst, blurred vision",Diabetes
+"patient reports polyuria, polydipsia, fatigue, glucose 210, a1c 7.4, uncontrolled diabetes mellitus",Diabetes
+"lab report shows elevated blood glucose 165, numb feet, increased hunger, diabetic follow up advised",Diabetes
+"routine screening with fasting glucose 132, hba1c 6.8, persistent thirst and weight loss",Diabetes
+"glucose 248 mg dl with ketones, fatigue, frequent urination and dehydration",Diabetes
+"medical report mentions diabetes, high sugar, blurred vision and slow wound healing",Diabetes
+"type 2 diabetes follow up, fasting sugar 176, hba1c 7.9, tingling feet and excessive thirst",Diabetes
+"lab summary with random blood sugar 240, recurrent urination, fatigue and uncontrolled diabetic profile",Diabetes
+"patient complains of weight loss, polyphagia, polydipsia, fasting glucose 145 and diabetes impression",Diabetes
+"endocrine assessment notes elevated glucose, a1c 6.9, blurred vision and diabetic neuropathy symptoms",Diabetes
+"blood pressure 168 over 102, headache, dizziness, hypertension noted in assessment",Hypertension
+"patient has persistent high bp 150 95, chest pressure, antihypertensive medication advised",Hypertension
+"systolic 145, diastolic 92, hypertensive urgency symptoms with headache and blurred vision",Hypertension
+"report shows elevated blood pressure 138 88, family history of hypertension and obesity",Hypertension
+"bp reading 160 100 with palpitations and fatigue, diagnosis suggests hypertension",Hypertension
+"high blood pressure follow up, sbp 148, dbp 94, mild headache and stress",Hypertension
+"clinical note records blood pressure 172 over 104, headache, stress and essential hypertension",Hypertension
+"ambulatory report with bp 152 96, dizziness, obesity and long standing hypertension",Hypertension
+"follow up visit shows uncontrolled hypertension with systolic 158, diastolic 98 and mild chest discomfort",Hypertension
+"patient assessment mentions elevated bp, hypertensive disease, headache and antihypertensive review",Hypertension
+"fever, productive cough, shortness of breath, chest x ray infiltrates, probable pneumonia",Pneumonia
+"patient complains of chills, cough, low oxygen saturation, lung opacity consistent with pneumonia",Pneumonia
+"medical report notes crackles, fever 101, breathing difficulty and community acquired pneumonia",Pneumonia
+"chest infection with cough, sputum, pleuritic pain and bilateral patchy infiltrates",Pneumonia
+"shortness of breath, fever, consolidation in right lower lobe, suspected pneumonia",Pneumonia
+"hospital summary mentions pneumonia, low spo2, severe cough and respiratory distress",Pneumonia
+"x ray shows left lower lobe infiltrate, fever, productive cough and pneumonia diagnosis",Pneumonia
+"respiratory report indicates consolidation, crackles, low oxygen saturation and bacterial pneumonia",Pneumonia
+"patient presents with cough, fever, chest congestion and patchy infiltrates suggesting pneumonia",Pneumonia
+"admission note records dyspnea, chills, sputum production and lobar pneumonia",Pneumonia
+"hemoglobin 8.9 g dl, fatigue, pallor, low rbc count, iron deficiency anemia likely",Anemia
+"cbc shows hb 9.4, weakness, dizziness, microcytic hypochromic anemia",Anemia
+"patient has anemia with low hematocrit, shortness of breath on exertion and tiredness",Anemia
+"lab values reveal hemoglobin 7.8, ferritin low, pale skin and fatigue",Anemia
+"report includes low iron, low hemoglobin, dizziness and chronic anemia assessment",Anemia
+"weakness, faintness, low hb 10.1 and reduced red blood cell count noted",Anemia
+"iron profile shows severe anemia, hemoglobin 8.2, pallor, fatigue and low ferritin",Anemia
+"complete blood count reveals hb 9.0, low hematocrit, weakness and nutritional anemia",Anemia
+"patient reports fatigue, dizziness, breathlessness and laboratory evidence of anemia",Anemia
+"microcytic anemia suspected with low hemoglobin, low rbc count and chronic weakness",Anemia
+"chest pain, elevated cholesterol, ecg changes, coronary artery disease and heart disease suspected",Heart Disease
+"patient reports exertional chest discomfort, high troponin, shortness of breath, cardiac evaluation",Heart Disease
+"echocardiogram shows reduced ejection fraction, edema, fatigue and heart failure findings",Heart Disease
+"medical report lists angina, abnormal ecg, hypertension, hyperlipidemia and heart disease",Heart Disease
+"shortness of breath, palpitations, coronary blockage history and elevated ldl",Heart Disease
+"cardiology note mentions heart disease, chest tightness, irregular rhythm and edema",Heart Disease
+"cardiac report shows ischemic changes on ecg, angina, elevated ldl and coronary artery disease",Heart Disease
+"patient has heart failure with edema, reduced ejection fraction, fatigue and breathlessness",Heart Disease
+"cardiology follow up notes chest pain, palpitations, troponin rise and suspected heart disease",Heart Disease
+"abnormal ecg with dyspnea, fluid retention and chronic cardiac disease history",Heart Disease
+"high fever, severe body ache, low platelet count 65000, rash, dengue ns1 positive",Dengue
+"patient has dengue fever with thrombocytopenia, headache, joint pain, myalgia and nausea",Dengue
+"cbc shows platelets 78000, hematocrit elevated, fever, retro orbital pain and dengue suspected",Dengue
+"medical report notes dengue igm positive, low platelets, vomiting, weakness and muscle pain",Dengue
+"acute febrile illness with rash, body pain, platelet count 90000 and dengue diagnosis",Dengue
+"dengue follow up with thrombocytopenia, high fever, headache, joint pain and dehydration",Dengue
+"viral fever evaluation shows platelet count 72000, dengue ns1 reactive, rash and severe myalgia",Dengue
+"report notes dengue infection with thrombocytopenia, nausea, vomiting, fever and body ache",Dengue
+"patient presents with high fever, retro orbital pain, low platelets and positive dengue igg igm",Dengue
+"lab sheet indicates dengue fever, platelet drop, hematocrit rise, weakness and joint pain",Dengue

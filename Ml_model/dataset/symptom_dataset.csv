@@ -1,0 +1,67 @@
+text,label
+"i have frequent urination, excessive thirst and blurred vision",Diabetes
+"i feel very thirsty and tired and my sugar seems high",Diabetes
+"my hands and feet feel numb and i urinate a lot",Diabetes
+"i have weight loss, hunger and high blood sugar",Diabetes
+"i feel thirsty all the time and my vision gets blurry",Diabetes
+"i have fatigue, increased urination and high glucose",Diabetes
+"my bp is high and i have headache and dizziness",Hypertension
+"i feel pressure in my head and my blood pressure stays high",Hypertension
+"i have headache with repeated high bp readings",Hypertension
+"i feel dizzy and my blood pressure is elevated",Hypertension
+"my blood pressure is high and i feel chest heaviness",Hypertension
+"i have stress, headache and high blood pressure",Hypertension
+"i have fever, cough and shortness of breath",Pneumonia
+"i am coughing with chest congestion and breathing difficulty",Pneumonia
+"i have chills, cough and low oxygen",Pneumonia
+"i have fever and chest pain when breathing with cough",Pneumonia
+"i have cough, sputum and difficulty breathing",Pneumonia
+"i feel feverish with chest congestion and shortness of breath",Pneumonia
+"i feel weak, pale and dizzy",Anemia
+"i get tired quickly and feel faint sometimes",Anemia
+"i have weakness, low hemoglobin and shortness of breath on walking",Anemia
+"i feel dizzy and tired with pale skin",Anemia
+"i feel exhausted and lightheaded most of the day",Anemia
+"i have fatigue, pallor and low blood count",Anemia
+"i have chest pain and palpitations",Heart Disease
+"i feel chest tightness and shortness of breath on walking",Heart Disease
+"i have swelling in my legs and feel breathless",Heart Disease
+"i have chest discomfort with abnormal heartbeat",Heart Disease
+"i get chest pressure when climbing stairs",Heart Disease
+"i have chest pain, sweating and breathlessness",Heart Disease
+"i have high fever, rash and body ache",Dengue
+"i have fever, joint pain and low platelets",Dengue
+"i have vomiting, rash and severe body pain with fever",Dengue
+"i have dengue symptoms like high fever and muscle pain",Dengue
+"i have fever, pain behind the eyes and body ache",Dengue
+"i feel weak with rash, fever and joint pain",Dengue
+"i have runny nose, sneezing and sore throat",Common Cold
+"i have cold, cough and blocked nose",Common Cold
+"i am sneezing a lot with mild sore throat and congestion",Common Cold
+"i have runny nose and mild cough since yesterday",Common Cold
+"i feel stuffed nose, watery eyes and light throat irritation",Common Cold
+"i have cold symptoms with sneezing and nasal congestion",Common Cold
+"i have high fever, body ache and dry cough",Influenza
+"i suddenly got fever, chills and severe body pain",Influenza
+"i have flu symptoms with headache, cough and fatigue",Influenza
+"i feel feverish with chills, body aches and cough",Influenza
+"i have sudden fever and muscle pain with weakness",Influenza
+"i have influenza like symptoms and want relief",Influenza
+"i keep sneezing and my nose runs during pollen season",Allergic Rhinitis
+"i have itchy eyes, sneezing and watery nose",Allergic Rhinitis
+"my allergies are acting up with runny nose and nasal itching",Allergic Rhinitis
+"i have hay fever symptoms with sneezing and itchy eyes",Allergic Rhinitis
+"i get seasonal allergy with congestion and watery eyes",Allergic Rhinitis
+"i have allergic rhinitis and constant sneezing",Allergic Rhinitis
+"i have loose motions, vomiting and stomach cramps",Viral Gastroenteritis
+"i have diarrhea with nausea and feel dehydrated",Viral Gastroenteritis
+"my stomach is upset with vomiting and loose stool",Viral Gastroenteritis
+"i have stomach flu symptoms with diarrhea and weakness",Viral Gastroenteritis
+"i have nausea, abdominal pain and repeated loose motions",Viral Gastroenteritis
+"i feel dehydrated because of diarrhea and vomiting",Viral Gastroenteritis
+"i have one sided headache with nausea and light sensitivity",Migraine
+"i have severe headache and i cannot tolerate bright light",Migraine
+"my migraine started with throbbing pain and vomiting",Migraine
+"i have headache with sensitivity to sound and nausea",Migraine
+"i get migraine with aura and severe head pain",Migraine
+"i have pulsating headache and need rest in a dark room",Migraine

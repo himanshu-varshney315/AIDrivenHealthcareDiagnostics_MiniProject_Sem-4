@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,15 +39,22 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => isLoading = false);
 
-      if (response != null && (response['token'] != null || response['status'] == 'success')) {
+      if (response != null &&
+          (response['token'] != null || response['status'] == 'success')) {
         final String userName =
             (response['user']?['name'] as String?)?.trim().isNotEmpty == true
-                ? (response['user']['name'] as String).trim()
-                : emailController.text.trim().split('@').first;
+            ? (response['user']['name'] as String).trim()
+            : emailController.text.trim().split('@').first;
         final String userEmail =
             (response['user']?['email'] as String?)?.trim().isNotEmpty == true
-                ? (response['user']['email'] as String).trim()
-                : emailController.text.trim();
+            ? (response['user']['email'] as String).trim()
+            : emailController.text.trim();
+
+        await AuthService().persistSession(
+          userName: userName,
+          userEmail: userEmail,
+        );
+        if (!mounted) return;
 
         Navigator.pushReplacementNamed(
           context,
@@ -54,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response?['message'] ?? 'Invalid credentials')),
+          SnackBar(
+            content: Text(response?['message'] ?? 'Invalid credentials'),
+          ),
         );
       }
     } catch (e) {
@@ -92,7 +103,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 54),
+                  const Icon(
+                    Icons.health_and_safety_rounded,
+                    color: Colors.white,
+                    size: 54,
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'Welcome Back',
@@ -131,10 +146,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: _fieldDecoration('Email', Icons.email_outlined),
+                            decoration: _fieldDecoration(
+                              'Email',
+                              Icons.email_outlined,
+                            ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'Enter your email';
-                              if (!value.contains('@')) return 'Enter a valid email';
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Enter your email';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Enter a valid email';
+                              }
                               return null;
                             },
                           ),
@@ -142,14 +164,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: passwordController,
                             obscureText: !_isPasswordVisible,
-                            decoration: _fieldDecoration('Password', Icons.lock_outline).copyWith(
-                              suffixIcon: IconButton(
-                                icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                              ),
-                            ),
+                            decoration:
+                                _fieldDecoration(
+                                  'Password',
+                                  Icons.lock_outline,
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _isPasswordVisible
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _isPasswordVisible =
+                                          !_isPasswordVisible,
+                                    ),
+                                  ),
+                                ),
                             validator: (value) {
-                              if (value == null || value.length < 6) return 'Password too short';
+                              if (value == null || value.length < 6) {
+                                return 'Password too short';
+                              }
                               return null;
                             },
                           ),
@@ -170,15 +205,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                 backgroundColor: const Color(0xFF4567F9),
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size.fromHeight(52),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
                               child: isLoading
                                   ? const SizedBox(
                                       width: 22,
                                       height: 22,
-                                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
                                     )
-                                  : const Text('LOGIN', style: TextStyle(fontWeight: FontWeight.w700)),
+                                  : const Text(
+                                      'LOGIN',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -191,8 +236,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/signup'),
-                        child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.w700)),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/signup'),
+                        child: const Text(
+                          'Sign Up',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ],
                   ),

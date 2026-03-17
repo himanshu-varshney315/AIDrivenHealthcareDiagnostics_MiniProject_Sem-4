@@ -1,8 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/auth_service.dart';
+import '../widgets/app_bottom_bar.dart';
 import 'upload_report_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -15,10 +15,8 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   String _userName = 'User Name';
   String _userEmail = '';
-  String? _profileImagePath;
   bool _isInitialized = false;
 
-  static const _profileImagePathKey = 'profile_image_path';
   static const _profileNameKey = 'profile_name';
   static const _profileEmailKey = 'profile_email';
 
@@ -34,23 +32,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final prefs = await SharedPreferences.getInstance();
+    final session = await AuthService().loadSession();
 
-    final argUserName = (args?['userName'] as String?)?.trim();
-    final argUserEmail = (args?['userEmail'] as String?)?.trim();
-
+    final argUserName = (args?['userName'] as String?)?.trim() ?? '';
+    final argUserEmail =
+        (args?['userEmail'] as String?)?.trim().toLowerCase() ?? '';
+    final activeEmail = (session?.userEmail.trim().isNotEmpty == true)
+        ? session!.userEmail.trim().toLowerCase()
+        : argUserEmail;
+    final activeName = (session?.userName.trim().isNotEmpty == true)
+        ? session!.userName.trim()
+        : argUserName;
+    final savedName = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _profileNameKey,
+    );
+    final savedEmail = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _profileEmailKey,
+    );
     if (!mounted) return;
     setState(() {
-      _userName = (prefs.getString(_profileNameKey)?.trim().isNotEmpty == true)
-          ? prefs.getString(_profileNameKey)!.trim()
-          : ((argUserName == null || argUserName.isEmpty)
-                ? 'User Name'
-                : argUserName);
-      _userEmail =
-          (prefs.getString(_profileEmailKey)?.trim().isNotEmpty == true)
-          ? prefs.getString(_profileEmailKey)!.trim()
-          : (argUserEmail ?? '');
-      _profileImagePath = prefs.getString(_profileImagePathKey);
+      _userName = (savedName?.trim().isNotEmpty == true)
+          ? savedName!.trim()
+          : (activeName.isEmpty ? 'User Name' : activeName);
+      _userEmail = (savedEmail?.trim().isNotEmpty == true)
+          ? savedEmail!.trim()
+          : activeEmail;
     });
+  }
+
+  String? _readScopedValue({
+    required SharedPreferences prefs,
+    required String activeEmail,
+    required String baseKey,
+    bool trimValue = true,
+  }) {
+    final scopedValue = prefs.getString(
+      AuthService.scopedKey(activeEmail, baseKey),
+    );
+    if (scopedValue != null && (!trimValue || scopedValue.trim().isNotEmpty)) {
+      return scopedValue;
+    }
+
+    final legacyValue = prefs.getString(baseKey);
+    final legacyEmail =
+        prefs.getString(_profileEmailKey)?.trim().toLowerCase() ?? '';
+    if (legacyValue != null &&
+        legacyEmail.isNotEmpty &&
+        legacyEmail == activeEmail) {
+      return legacyValue;
+    }
+
+    return null;
   }
 
   String _greeting() {
@@ -58,15 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
-  }
-
-  Future<void> _openProfile() async {
-    await Navigator.pushNamed(
-      context,
-      '/profile',
-      arguments: {'userName': _userName, 'userEmail': _userEmail},
-    );
-    await _loadDashboardData();
   }
 
   void _showComingSoon(String label) {
@@ -80,156 +107,346 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const int steps = 8450;
     const int goal = 10000;
     const String sleepDuration = '7h 15m';
+    const double hydrationProgress = 0.74;
     final double stepProgress = (steps / goal).clamp(0, 1);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F4F8),
-      bottomNavigationBar: _DashboardBottomBar(
-        profileImagePath: _profileImagePath,
-        onProfileTap: _openProfile,
-        onItemTap: _showComingSoon,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFE7F3FF), Color(0xFFF4EDFF), Color(0xFFF8F9FC)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Health Dashboard',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+      backgroundColor: const Color(0xFFF5F7FB),
+      bottomNavigationBar: const AppBottomBar(selectedItem: 'Dashboard'),
+      body: Stack(
+        children: [
+          const _DashboardBackdrop(),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Health Dashboard',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                    _HeaderActionButton(
-                      icon: Icons.share_outlined,
-                      onTap: () => _showComingSoon('Share'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Welcome back',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_greeting()},\n$_userName!',
-                  style: const TextStyle(
-                    fontSize: 46,
-                    height: 1.02,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'How are you today?',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.black.withValues(alpha: 0.78),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F5F7).withValues(alpha: 0.96),
-                    borderRadius: BorderRadius.circular(36),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x15000000),
-                        blurRadius: 24,
-                        offset: Offset(0, 14),
+                      Row(
+                        children: [
+                          _HeaderActionButton(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            onTap: () => _showComingSoon('Messages'),
+                          ),
+                          const SizedBox(width: 12),
+                          _HeaderActionButton(
+                            icon: Icons.notifications_none_rounded,
+                            onTap: () => _showComingSoon('Notifications'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Recommended for you',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF5FBFF), Color(0xFFF7F1FF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(height: 16),
-                      const _SuggestionCard(),
-                      const SizedBox(height: 22),
-                      Wrap(
-                        spacing: 26,
-                        runSpacing: 16,
-                        children: [
-                          _QuickAction(
-                            icon: Icons.upload_file_rounded,
-                            label: 'Upload\nReport',
-                            iconColor: const Color(0xFFF0A247),
-                            backgroundColor: const Color(0xFFFFEEDA),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ReportScreen(),
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x15000000),
+                          blurRadius: 24,
+                          offset: Offset(0, 16),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE9F6FF),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.wb_sunny_outlined,
+                                size: 16,
+                                color: Color(0xFF468AD8),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Daily overview',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black.withValues(alpha: 0.68),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Welcome back',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${_greeting()},\n$_userName!',
+                          style: const TextStyle(
+                            fontSize: 40,
+                            height: 1.03,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _userEmail.isEmpty
+                              ? 'How are you feeling today?'
+                              : 'Signed in as $_userEmail',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.black.withValues(alpha: 0.65),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: const [
+                            _InsightChip(
+                              icon: Icons.favorite_border_rounded,
+                              label: 'Consistency',
+                              value: 'Strong',
+                            ),
+                            _InsightChip(
+                              icon: Icons.water_drop_outlined,
+                              label: 'Hydration',
+                              value: '74%',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(34),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x12000000),
+                          blurRadius: 20,
+                          offset: Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Recommended for you',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const _SuggestionCard(),
+                        const SizedBox(height: 22),
+                        Wrap(
+                          spacing: 18,
+                          runSpacing: 16,
+                          children: [
+                            _QuickAction(
+                              icon: Icons.upload_file_rounded,
+                              label: 'Upload\nReport',
+                              iconColor: const Color(0xFFF0A247),
+                              backgroundColor: const Color(0xFFFFEEDA),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ReportScreen(),
+                                ),
                               ),
                             ),
-                          ),
-                          _QuickAction(
-                            icon: Icons.monitor_heart_outlined,
-                            label: 'System\nLog',
-                            iconColor: const Color(0xFFE88A99),
-                            backgroundColor: const Color(0xFFFFE8EE),
-                            onTap: () => _showComingSoon('System Log'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      const Text(
-                        'Your Key Stats',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _StepsCard(
-                              steps: steps,
-                              goal: goal,
-                              progress: stepProgress,
+                            _QuickAction(
+                              icon: Icons.monitor_heart_outlined,
+                              label: 'System\nLog',
+                              iconColor: const Color(0xFFE77992),
+                              backgroundColor: const Color(0xFFFFE8EF),
+                              onTap: () => _showComingSoon('System Log'),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                        const Text(
+                          'Your Key Stats',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                           ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: _SleepCard(durationLabel: sleepDuration),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 18),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final cards = [
+                              _StepsCard(
+                                steps: steps,
+                                goal: goal,
+                                progress: stepProgress,
+                              ),
+                              const _SleepCard(durationLabel: sleepDuration),
+                            ];
+
+                            if (constraints.maxWidth < 380) {
+                              return Column(
+                                children: [
+                                  cards[0],
+                                  const SizedBox(height: 14),
+                                  cards[1],
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: cards[0]),
+                                const SizedBox(width: 14),
+                                Expanded(child: cards[1]),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        const _MiniSummaryRow(
+                          hydrationProgress: hydrationProgress,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardBackdrop extends StatelessWidget {
+  const _DashboardBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFEAF6FF), Color(0xFFF6F0FF), Color(0xFFF8FAFD)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
         ),
+        const Positioned(
+          top: -40,
+          right: -10,
+          child: _GlowBubble(size: 180, color: Color(0x80D9D2FF)),
+        ),
+        const Positioned(
+          top: 80,
+          left: -30,
+          child: _GlowBubble(size: 140, color: Color(0x8097E2FF)),
+        ),
+        const Positioned(
+          bottom: 120,
+          right: -20,
+          child: _GlowBubble(size: 160, color: Color(0x80FFE4C7)),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlowBubble extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _GlowBubble({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0.0)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InsightChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF4A87D7)),
+          const SizedBox(width: 8),
+          Text(
+            '$label: $value',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
@@ -244,7 +461,7 @@ class _HeaderActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.72),
+      color: Colors.white.withValues(alpha: 0.82),
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -267,33 +484,52 @@ class _SuggestionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F3F8),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF7F5FA), Color(0xFFF9FBFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x12000000),
+            color: Color(0x11000000),
             blurRadius: 16,
             offset: Offset(0, 10),
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome_outlined, color: Color(0xFF9BA0AE), size: 24),
-          SizedBox(width: 12),
-          Expanded(
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDEAF9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_outlined,
+              color: Color(0xFF8270D8),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Health AI Suggestion:',
+                  'Health AI Suggestion',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Your sleep pattern is improving. Try to maintain the same bedtime tonight for optimal recovery.',
-                  style: TextStyle(fontSize: 16, height: 1.22),
+                  'Your sleep pattern is improving. Try to maintain the same bedtime tonight for better recovery and focus tomorrow.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.35,
+                    color: Color(0xFF505665),
+                  ),
                 ),
               ],
             ),
@@ -325,22 +561,26 @@ class _QuickAction extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        width: 96,
+        width: 88,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: backgroundColor,
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Icon(icon, color: iconColor, size: 30),
             ),
             const SizedBox(height: 12),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 1.08,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.15,
               ),
             ),
           ],
@@ -366,7 +606,11 @@ class _StepsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFF6FAFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
@@ -378,6 +622,7 @@ class _StepsCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Row(
             children: [
@@ -392,7 +637,7 @@ class _StepsCard extends StatelessWidget {
               SizedBox(width: 10),
               Text(
                 'Steps',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -422,7 +667,7 @@ class _StepsCard extends StatelessWidget {
                       Text(
                         _formatSteps(steps),
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -440,7 +685,7 @@ class _StepsCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           RichText(
             text: TextSpan(
               style: const TextStyle(color: Colors.black),
@@ -448,19 +693,24 @@ class _StepsCard extends StatelessWidget {
                 TextSpan(
                   text: _formatSteps(steps),
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 TextSpan(
-                  text: ' / ${_formatSteps(goal)}',
+                  text: ' / ${_formatSteps(goal)} goal',
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     color: Color(0xFF707582),
                   ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${(progress * 100).round()}% of today\'s movement target',
+            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7483)),
           ),
         ],
       ),
@@ -486,7 +736,11 @@ class _SleepCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFFBF7FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
@@ -498,6 +752,7 @@ class _SleepCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Row(
             children: [
@@ -509,20 +764,25 @@ class _SleepCard extends StatelessWidget {
               SizedBox(width: 10),
               Text(
                 'Sleep',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 18),
           const SizedBox(
-            height: 100,
+            height: 104,
             width: double.infinity,
             child: _SleepChart(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           Text(
             durationLabel,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Steady rest rhythm through the night',
+            style: TextStyle(fontSize: 13, color: Color(0xFF6B7483)),
           ),
         ],
       ),
@@ -543,7 +803,7 @@ class _SleepChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final guidePaint = Paint()
-      ..color = const Color(0xFFE5E6EB)
+      ..color = const Color(0xFFE9E8EE)
       ..strokeWidth = 1;
     final purplePaint = Paint()
       ..color = const Color(0xFF8C59D5)
@@ -555,29 +815,33 @@ class _SleepChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final bars = <double>[
-      0.20,
-      0.62,
-      0.44,
-      0.71,
-      0.35,
-      0.82,
-      0.49,
-      0.28,
-      0.58,
-      0.33,
-      0.66,
-      0.30,
+      0.22,
+      0.68,
+      0.48,
+      0.78,
+      0.38,
+      0.80,
+      0.54,
+      0.34,
+      0.64,
+      0.40,
+      0.70,
+      0.32,
     ];
     final step = size.width / (bars.length - 1);
 
     for (var i = 0; i < bars.length; i++) {
       final dx = i * step;
-      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), guidePaint);
+      canvas.drawLine(
+        Offset(dx, size.height * 0.12),
+        Offset(dx, size.height * 0.92),
+        guidePaint,
+      );
 
       final top = size.height * bars[i];
       canvas.drawLine(
         Offset(dx, top),
-        Offset(dx, size.height * 0.94),
+        Offset(dx, size.height * 0.9),
         i.isEven ? purplePaint : bluePaint,
       );
     }
@@ -587,143 +851,97 @@ class _SleepChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _DashboardBottomBar extends StatelessWidget {
-  final String? profileImagePath;
-  final VoidCallback onProfileTap;
-  final ValueChanged<String> onItemTap;
+class _MiniSummaryRow extends StatelessWidget {
+  final double hydrationProgress;
 
-  const _DashboardBottomBar({
-    required this.profileImagePath,
-    required this.onProfileTap,
-    required this.onItemTap,
+  const _MiniSummaryRow({required this.hydrationProgress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _MiniStatCard(
+            icon: Icons.water_drop_outlined,
+            title: 'Hydration',
+            subtitle: '${(hydrationProgress * 100).round()}% complete',
+            accentColor: const Color(0xFF4AA5F1),
+            backgroundColor: const Color(0xFFEAF6FF),
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: _MiniStatCard(
+            icon: Icons.favorite_outline_rounded,
+            title: 'Recovery',
+            subtitle: 'Resting strong today',
+            accentColor: Color(0xFFE26E7D),
+            backgroundColor: Color(0xFFFFEEF1),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniStatCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final Color backgroundColor;
+
+  const _MiniStatCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 20,
-            offset: Offset(0, -8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: accentColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6C7280),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Dashboard',
-                icon: Icons.home_outlined,
-                selected: true,
-                onTap: () {},
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Health AI',
-                icon: Icons.smart_toy_outlined,
-                accentColor: const Color(0xFF7F74D8),
-                onTap: () => onItemTap('Health AI'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Analytics',
-                icon: Icons.bar_chart_rounded,
-                onTap: () => onItemTap('Analytics'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Clinics',
-                icon: Icons.add_location_alt_outlined,
-                onTap: () => onItemTap('Clinics'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'My Profile',
-                icon: Icons.person_outline_rounded,
-                profileImagePath: profileImagePath,
-                onTap: onProfileTap,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomBarItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final String? profileImagePath;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _BottomBarItem({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.selected = false,
-    this.profileImagePath,
-    this.accentColor = const Color(0xFF646A76),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasProfileImage =
-        profileImagePath != null && File(profileImagePath!).existsSync();
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 34,
-              height: 4,
-              decoration: BoxDecoration(
-                color: selected ? Colors.black : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (hasProfileImage)
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: FileImage(File(profileImagePath!)),
-              )
-            else
-              Icon(
-                icon,
-                color: selected ? Colors.black : accentColor,
-                size: 28,
-              ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? Colors.black : const Color(0xFF3F4450),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,0 +1,10 @@
+flask
+pdfplumber
+pymupdf
+scikit-learn
+pandas
+joblib
+transformers
+torch
+pytesseract
+Pillow

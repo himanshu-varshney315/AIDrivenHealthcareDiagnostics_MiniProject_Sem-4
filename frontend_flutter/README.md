@@ -1,16 +1,44 @@
 # frontend_flutter
 
-A new Flutter project.
+Flutter client for the healthcare app.
 
-## Getting Started
+## Clinics Map Setup
 
-This project is a starting point for a Flutter application.
+The `Clinics` tab now uses Google Maps + Google Places to show nearby clinics and directions.
 
-A few resources to get you started if this is your first Flutter project:
+### 1. Enable APIs
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Enable these APIs in your Google Cloud project:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Maps SDK for Android
+- Maps SDK for iOS
+- Places API
+
+### 2. Add the API key for Android maps
+
+Edit [android/local.properties](/d:/Gla/Sem%20IV/Mini/frontend_flutter/android/local.properties) and add:
+
+```properties
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+```
+
+### 3. Add the API key for iOS maps
+
+Edit both:
+
+- [Debug.xcconfig](/d:/Gla/Sem%20IV/Mini/frontend_flutter/ios/Flutter/Debug.xcconfig)
+- [Release.xcconfig](/d:/Gla/Sem%20IV/Mini/frontend_flutter/ios/Flutter/Release.xcconfig)
+
+Add:
+
+```xcconfig
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+```
+
+### 4. Pass the key to Flutter for Places API requests
+
+Run the app with:
+
+```bash
+flutter run --dart-define=GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+```

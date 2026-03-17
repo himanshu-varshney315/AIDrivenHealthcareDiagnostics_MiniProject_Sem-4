@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/auth_service.dart';
+import '../widgets/app_bottom_bar.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -21,6 +24,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emergencyController = TextEditingController();
 
   String? _imagePath;
+  String _activeUserEmail = '';
+  String _activeUserName = '';
   bool _notificationsEnabled = true;
   bool _shareReportsWithDoctor = false;
   bool _didLoad = false;
@@ -59,22 +64,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final prefs = await SharedPreferences.getInstance();
+    final session = await AuthService().loadSession();
+    final routeUserName = (args?['userName'] as String?)?.trim() ?? '';
+    final routeUserEmail =
+        (args?['userEmail'] as String?)?.trim().toLowerCase() ?? '';
+    final activeEmail = (session?.userEmail.trim().isNotEmpty == true)
+        ? session!.userEmail.trim().toLowerCase()
+        : routeUserEmail;
+    final activeName = (session?.userName.trim().isNotEmpty == true)
+        ? session!.userName.trim()
+        : routeUserName;
+    final scopedName = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _nameKey,
+    );
+    final scopedEmail = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _emailKey,
+    );
+    final scopedPhone = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _phoneKey,
+    );
+    final scopedAge = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _ageKey,
+    );
+    final scopedBloodGroup = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _bloodGroupKey,
+    );
+    final scopedEmergency = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _emergencyKey,
+    );
+    final scopedImagePath = _readScopedValue(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _imagePathKey,
+      trimValue: false,
+    );
+    final scopedNotifications = _readScopedBool(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _notificationsKey,
+    );
+    final scopedShareReports = _readScopedBool(
+      prefs: prefs,
+      activeEmail: activeEmail,
+      baseKey: _shareReportsKey,
+    );
 
     if (!mounted) return;
     setState(() {
-      _nameController.text =
-          prefs.getString(_nameKey) ?? (args?['userName'] as String? ?? '');
-      _emailController.text =
-          prefs.getString(_emailKey) ?? (args?['userEmail'] as String? ?? '');
-      _phoneController.text = prefs.getString(_phoneKey) ?? '';
-      _ageController.text = prefs.getString(_ageKey) ?? '';
-      _bloodGroupController.text = prefs.getString(_bloodGroupKey) ?? '';
-      _emergencyController.text = prefs.getString(_emergencyKey) ?? '';
-      _imagePath = prefs.getString(_imagePathKey);
-      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
-      _shareReportsWithDoctor = prefs.getBool(_shareReportsKey) ?? false;
+      _activeUserEmail = activeEmail;
+      _activeUserName = activeName;
+      _nameController.text = scopedName ?? activeName;
+      _emailController.text = scopedEmail ?? activeEmail;
+      _phoneController.text = scopedPhone ?? '';
+      _ageController.text = scopedAge ?? '';
+      _bloodGroupController.text = scopedBloodGroup ?? '';
+      _emergencyController.text = scopedEmergency ?? '';
+      _imagePath = scopedImagePath;
+      _notificationsEnabled = scopedNotifications ?? true;
+      _shareReportsWithDoctor = scopedShareReports ?? false;
       _didLoad = true;
     });
+  }
+
+  String? _readScopedValue({
+    required SharedPreferences prefs,
+    required String activeEmail,
+    required String baseKey,
+    bool trimValue = true,
+  }) {
+    final scopedValue = prefs.getString(
+      AuthService.scopedKey(activeEmail, baseKey),
+    );
+    if (scopedValue != null && (!trimValue || scopedValue.trim().isNotEmpty)) {
+      return scopedValue;
+    }
+
+    final legacyValue = prefs.getString(baseKey);
+    final legacyEmail = prefs.getString(_emailKey)?.trim().toLowerCase() ?? '';
+    if (legacyValue != null &&
+        legacyEmail.isNotEmpty &&
+        legacyEmail == activeEmail) {
+      return legacyValue;
+    }
+
+    return null;
+  }
+
+  bool? _readScopedBool({
+    required SharedPreferences prefs,
+    required String activeEmail,
+    required String baseKey,
+  }) {
+    final scopedKey = AuthService.scopedKey(activeEmail, baseKey);
+    if (prefs.containsKey(scopedKey)) {
+      return prefs.getBool(scopedKey);
+    }
+
+    final legacyEmail = prefs.getString(_emailKey)?.trim().toLowerCase() ?? '';
+    if (legacyEmail.isNotEmpty &&
+        legacyEmail == activeEmail &&
+        prefs.containsKey(baseKey)) {
+      return prefs.getBool(baseKey);
+    }
+
+    return null;
+  }
+
+  String _scopedKey(String baseKey) {
+    final scopeEmail = _activeUserEmail.isEmpty
+        ? _emailController.text.trim().toLowerCase()
+        : _activeUserEmail;
+    return AuthService.scopedKey(scopeEmail, baseKey);
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -95,16 +207,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_nameKey, _nameController.text.trim());
-    await prefs.setString(_emailKey, _emailController.text.trim());
-    await prefs.setString(_phoneKey, _phoneController.text.trim());
-    await prefs.setString(_ageKey, _ageController.text.trim());
-    await prefs.setString(_bloodGroupKey, _bloodGroupController.text.trim());
-    await prefs.setString(_emergencyKey, _emergencyController.text.trim());
-    await prefs.setBool(_notificationsKey, _notificationsEnabled);
-    await prefs.setBool(_shareReportsKey, _shareReportsWithDoctor);
+    await prefs.setString(_scopedKey(_nameKey), _nameController.text.trim());
+    await prefs.setString(_scopedKey(_emailKey), _emailController.text.trim());
+    await prefs.setString(_scopedKey(_phoneKey), _phoneController.text.trim());
+    await prefs.setString(_scopedKey(_ageKey), _ageController.text.trim());
+    await prefs.setString(
+      _scopedKey(_bloodGroupKey),
+      _bloodGroupController.text.trim(),
+    );
+    await prefs.setString(
+      _scopedKey(_emergencyKey),
+      _emergencyController.text.trim(),
+    );
+    await prefs.setBool(_scopedKey(_notificationsKey), _notificationsEnabled);
+    await prefs.setBool(_scopedKey(_shareReportsKey), _shareReportsWithDoctor);
     if (_imagePath != null) {
-      await prefs.setString(_imagePathKey, _imagePath!);
+      await prefs.setString(_scopedKey(_imagePathKey), _imagePath!);
     }
 
     if (!mounted) return;
@@ -113,7 +231,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).showSnackBar(const SnackBar(content: Text('Profile saved successfully')));
   }
 
-  void _logout() {
+  Future<void> _logout() async {
+    await AuthService().clearSession();
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
@@ -126,12 +246,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final hasImage = _imagePath != null && File(_imagePath!).existsSync();
     final imageProvider = hasImage ? FileImage(File(_imagePath!)) : null;
     final displayName = _nameController.text.trim().isEmpty
-        ? 'Your Profile'
+        ? (_activeUserName.isEmpty ? 'Your Profile' : _activeUserName)
         : _nameController.text.trim();
-    final displayEmail = _emailController.text.trim();
+    final displayEmail = _emailController.text.trim().isEmpty
+        ? _activeUserEmail
+        : _emailController.text.trim();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F8),
+      bottomNavigationBar: const AppBottomBar(selectedItem: 'My Profile'),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -391,6 +514,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'Account',
                     child: Column(
                       children: [
+                        _AccountActionTile(
+                          icon: Icons.share_outlined,
+                          title: 'Share',
+                          subtitle: 'Share your profile or health updates',
+                          accentColor: const Color(0xFF5F8EF6),
+                          backgroundColor: const Color(0xFFF1F6FF),
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Share feature coming soon'),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 10),
                         _AccountActionTile(
                           icon: Icons.logout_rounded,
                           title: 'Logout',

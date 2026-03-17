@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-
   final String baseUrl = _resolveBaseUrl();
   static const Duration _requestTimeout = Duration(seconds: 12);
 
@@ -41,7 +40,7 @@ class ApiService {
             body: jsonEncode({
               "name": name,
               "email": email,
-              "password": password
+              "password": password,
             }),
           )
           .timeout(_requestTimeout);
@@ -66,10 +65,7 @@ class ApiService {
           .post(
             Uri.parse("$baseUrl/login"),
             headers: {"Content-Type": "application/json"},
-            body: jsonEncode({
-              "email": email,
-              "password": password
-            }),
+            body: jsonEncode({"email": email, "password": password}),
           )
           .timeout(_requestTimeout);
 
@@ -94,21 +90,22 @@ class ApiService {
         Uri.parse("$baseUrl/upload-report"),
       );
 
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          "file",
-          file.path,
-        ),
-      );
+      request.files.add(await http.MultipartFile.fromPath("file", file.path));
 
       var response = await request.send().timeout(_requestTimeout);
       var responseData = await response.stream.bytesToString();
 
       if (response.statusCode >= 400) {
+        String message = "Request failed";
+        try {
+          final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+          message = parsed["message"]?.toString() ?? message;
+        } catch (_) {}
+
         return {
-          "message": "Request failed",
+          "message": message,
           "status_code": response.statusCode,
-          "body": responseData
+          "body": responseData,
         };
       }
 
@@ -124,6 +121,28 @@ class ApiService {
     }
   }
 
+  Future analyzeSymptoms(String symptomsText) async {
+    try {
+      var response = await http
+          .post(
+            Uri.parse("$baseUrl/analyze-symptoms"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({"symptoms_text": symptomsText}),
+          )
+          .timeout(_requestTimeout);
+
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError("Cannot reach backend at $baseUrl");
+    } on TimeoutException {
+      return _networkError("Request timed out. Backend may be down.");
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
   Map<String, dynamic> _decodeResponse(http.Response response) {
     Map<String, dynamic> data;
 
@@ -132,7 +151,7 @@ class ApiService {
     } catch (_) {
       return {
         "message": "Invalid server response",
-        "status_code": response.statusCode
+        "status_code": response.statusCode,
       };
     }
 
@@ -141,9 +160,6 @@ class ApiService {
   }
 
   Map<String, dynamic> _networkError(String message) {
-    return {
-      "message": message,
-      "status_code": 0,
-    };
+    return {"message": message, "status_code": 0};
   }
 }
