@@ -67,7 +67,9 @@ class _HealthAiScreenState extends State<HealthAiScreen> {
       if (_messages.isNotEmpty && _messages.last.isTyping) {
         _messages.removeLast();
       }
-      _messages.add(_ChatMessage.assistant(text: advice.summary, advice: advice));
+      _messages.add(
+        _ChatMessage.assistant(text: advice.summary, advice: advice),
+      );
     });
     _scrollToBottom();
   }
@@ -120,7 +122,9 @@ class _HealthAiScreenState extends State<HealthAiScreen> {
                       onPromptTap: _applyPrompt,
                     ),
                     const SizedBox(height: 18),
-                    ..._messages.map((message) => _ChatBubble(message: message)),
+                    ..._messages.map(
+                      (message) => _ChatBubble(message: message),
+                    ),
                   ],
                 ),
               ),
@@ -168,10 +172,7 @@ class _ConversationHero extends StatelessWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: Color(0x26FFFFFF),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: Colors.white,
-                ),
+                child: Icon(Icons.favorite_rounded, color: Colors.white),
               ),
               SizedBox(width: 12),
               Expanded(
@@ -222,10 +223,7 @@ class _SafetyBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Supportive guidance only. Use a doctor or emergency care for severe, worsening, or persistent symptoms.',
-              style: TextStyle(
-                height: 1.4,
-                color: Color(0xFF6D5619),
-              ),
+              style: TextStyle(height: 1.4, color: Color(0xFF6D5619)),
             ),
           ),
         ],
@@ -238,10 +236,7 @@ class _QuickPromptTray extends StatelessWidget {
   final List<String> prompts;
   final ValueChanged<String> onPromptTap;
 
-  const _QuickPromptTray({
-    required this.prompts,
-    required this.onPromptTap,
-  });
+  const _QuickPromptTray({required this.prompts, required this.onPromptTap});
 
   @override
   Widget build(BuildContext context) {
@@ -458,16 +453,10 @@ class _AdviceSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _SectionText(
-            title: 'Best next step',
-            body: advice.recommendation,
-          ),
+          _SectionText(title: 'Best next step', body: advice.recommendation),
           if (advice.precautions.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _SectionList(
-              title: 'Precautions',
-              items: advice.precautions,
-            ),
+            _SectionList(title: 'Precautions', items: advice.precautions),
           ],
           if (advice.medicines.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -477,10 +466,7 @@ class _AdviceSummaryCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          _SectionText(
-            title: 'When to seek care',
-            body: advice.seekCare,
-          ),
+          _SectionText(title: 'When to seek care', body: advice.seekCare),
         ],
       ),
     );
@@ -522,10 +508,7 @@ class _SectionText extends StatelessWidget {
   final String title;
   final String body;
 
-  const _SectionText({
-    required this.title,
-    required this.body,
-  });
+  const _SectionText({required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
@@ -558,10 +541,7 @@ class _SectionList extends StatelessWidget {
   final String title;
   final List<String> items;
 
-  const _SectionList({
-    required this.title,
-    required this.items,
-  });
+  const _SectionList({required this.title, required this.items});
 
   @override
   Widget build(BuildContext context) {
@@ -725,10 +705,8 @@ class _ChatMessage {
   const _ChatMessage.user({required String text})
     : this._(role: _MessageRole.user, text: text);
 
-  const _ChatMessage.assistant({
-    required String text,
-    _HealthAiAdvice? advice,
-  }) : this._(role: _MessageRole.assistant, text: text, advice: advice);
+  const _ChatMessage.assistant({required String text, _HealthAiAdvice? advice})
+    : this._(role: _MessageRole.assistant, text: text, advice: advice);
 
   const _ChatMessage.assistantTyping()
     : this._(role: _MessageRole.assistant, text: '', isTyping: true);

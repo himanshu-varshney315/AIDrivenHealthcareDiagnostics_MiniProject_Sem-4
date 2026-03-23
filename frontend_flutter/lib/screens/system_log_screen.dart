@@ -10,14 +10,20 @@ class SystemLogScreen extends StatefulWidget {
 class _SystemLogScreenState extends State<SystemLogScreen> {
   String _selectedFilter = 'All';
 
-  static const List<String> _filters = ['All', 'Critical', 'Warning', 'Healthy'];
+  static const List<String> _filters = [
+    'All',
+    'Critical',
+    'Warning',
+    'Healthy',
+  ];
 
   static const List<_LogEntry> _entries = [
     _LogEntry(
       title: 'Blood pressure spike detected',
       timestamp: 'Today, 08:42 AM',
       severity: 'Critical',
-      description: 'Systolic pressure crossed your configured threshold after medication was skipped.',
+      description:
+          'Systolic pressure crossed your configured threshold after medication was skipped.',
       icon: Icons.monitor_heart_rounded,
       color: Color(0xFFE45D72),
       background: Color(0xFFFFE6EB),
@@ -26,7 +32,8 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
       title: 'Hydration reminder acknowledged',
       timestamp: 'Today, 07:10 AM',
       severity: 'Healthy',
-      description: 'Daily hydration target is at 74%. Keep tracking fluid intake through the afternoon.',
+      description:
+          'Daily hydration target is at 74%. Keep tracking fluid intake through the afternoon.',
       icon: Icons.water_drop_rounded,
       color: Color(0xFF1D9ED8),
       background: Color(0xFFE1F5FF),
@@ -35,7 +42,8 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
       title: 'Sleep pattern irregular',
       timestamp: 'Yesterday, 11:48 PM',
       severity: 'Warning',
-      description: 'Sleep duration dropped below 6 hours for the second time this week.',
+      description:
+          'Sleep duration dropped below 6 hours for the second time this week.',
       icon: Icons.nightlight_round,
       color: Color(0xFF9B63E6),
       background: Color(0xFFF1E9FF),
@@ -44,7 +52,8 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
       title: 'Medication logged on time',
       timestamp: 'Yesterday, 09:00 PM',
       severity: 'Healthy',
-      description: 'Evening medication intake was recorded and synced successfully.',
+      description:
+          'Evening medication intake was recorded and synced successfully.',
       icon: Icons.medication_rounded,
       color: Color(0xFF2EBC73),
       background: Color(0xFFE2F8EB),
@@ -53,7 +62,8 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
       title: 'Heart rate trending upward',
       timestamp: 'Mar 08, 06:35 PM',
       severity: 'Warning',
-      description: 'Resting heart rate moved 11% above your weekly baseline after limited activity.',
+      description:
+          'Resting heart rate moved 11% above your weekly baseline after limited activity.',
       icon: Icons.favorite_rounded,
       color: Color(0xFFF19A38),
       background: Color(0xFFFFF0DB),
@@ -104,10 +114,7 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     'System Log',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 10),
                   const Text(
@@ -158,7 +165,9 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                         setState(() => _selectedFilter = filter);
                       },
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFF4A5572),
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF4A5572),
                         fontWeight: FontWeight.w600,
                       ),
                       selectedColor: const Color(0xFF4B73FF),
@@ -166,7 +175,9 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                         side: BorderSide(
-                          color: isSelected ? Colors.transparent : const Color(0xFFE1E6F0),
+                          color: isSelected
+                              ? Colors.transparent
+                              : const Color(0xFFE1E6F0),
                         ),
                       ),
                     );
@@ -192,7 +203,10 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                           CircleAvatar(
                             radius: 22,
                             backgroundColor: Color(0xFF31384D),
-                            child: Icon(Icons.security_rounded, color: Colors.white),
+                            child: Icon(
+                              Icons.security_rounded,
+                              color: Colors.white,
+                            ),
                           ),
                           SizedBox(width: 12),
                           Expanded(
@@ -289,7 +303,11 @@ class _LogCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF98A2B3)),
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 16,
+                      color: Color(0xFF98A2B3),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       entry.timestamp,
@@ -375,11 +393,17 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               Text(
                 label,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -393,10 +417,7 @@ class _RoundIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _RoundIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _RoundIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -420,10 +441,7 @@ class _RoundBadge extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _RoundBadge({
-    required this.icon,
-    required this.label,
-  });
+  const _RoundBadge({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -437,10 +455,7 @@ class _RoundBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: const Color(0xFF1F2433)),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );

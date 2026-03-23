@@ -87,7 +87,11 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFB3E6F5), Color(0xFF99B8FF), Color(0xFFD9D7FF)],
+                  colors: [
+                    Color(0xFFB3E6F5),
+                    Color(0xFF99B8FF),
+                    Color(0xFFD9D7FF),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -109,7 +113,10 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                       const Expanded(
                         child: Text(
                           'Find Clinics',
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                       const _TopIconButton(icon: Icons.tune_rounded),
@@ -146,10 +153,13 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                         return ChoiceChip(
                           label: Text(filter),
                           selected: isSelected,
-                          onSelected: (_) => setState(() => _selectedFilter = filter),
+                          onSelected: (_) =>
+                              setState(() => _selectedFilter = filter),
                           selectedColor: const Color(0xFF4567F9),
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : const Color(0xFF4E5B74),
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF4E5B74),
                             fontWeight: FontWeight.w600,
                           ),
                           backgroundColor: Colors.white,
@@ -159,7 +169,8 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                           ),
                         );
                       },
-                      separatorBuilder: (context, index) => const SizedBox(width: 10),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: 10),
                       itemCount: _filters.length,
                     ),
                   ),
@@ -171,7 +182,10 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                   ? const Center(
                       child: Text(
                         'No clinics match your search.',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     )
                   : ListView(
@@ -179,10 +193,12 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                       children: [
                         const _EmergencyBanner(),
                         const SizedBox(height: 18),
-                        ...visibleClinics.map((clinic) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _ClinicCard(clinic: clinic),
-                            )),
+                        ...visibleClinics.map(
+                          (clinic) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _ClinicCard(clinic: clinic),
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -197,10 +213,7 @@ class _TopIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _TopIconButton({
-    required this.icon,
-    this.onTap,
-  });
+  const _TopIconButton({required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +257,11 @@ class _EmergencyBanner extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 28),
+            child: const Icon(
+              Icons.local_hospital_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -286,7 +303,11 @@ class _ClinicCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: Color(0x15000000), blurRadius: 18, offset: Offset(0, 10)),
+          BoxShadow(
+            color: Color(0x15000000),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
@@ -297,7 +318,11 @@ class _ClinicCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: clinic.accentColor.withValues(alpha: 0.14),
-                child: Icon(Icons.add_location_alt_rounded, color: clinic.accentColor, size: 28),
+                child: Icon(
+                  Icons.add_location_alt_rounded,
+                  color: clinic.accentColor,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -306,18 +331,27 @@ class _ClinicCard extends StatelessWidget {
                   children: [
                     Text(
                       clinic.name,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       clinic.address,
-                      style: const TextStyle(color: Color(0xFF69758D), height: 1.25),
+                      style: const TextStyle(
+                        color: Color(0xFF69758D),
+                        height: 1.25,
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F7FF),
                   borderRadius: BorderRadius.circular(14),
@@ -369,7 +403,9 @@ class _ClinicCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Open directions to ${clinic.name}')),
+                      SnackBar(
+                        content: Text('Open directions to ${clinic.name}'),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.directions_rounded),
@@ -396,10 +432,7 @@ class _InfoPill extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
