@@ -9,6 +9,8 @@ import 'screens/health_ai_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/find_clinics_screen.dart';
 import 'screens/system_log_screen.dart';
+import 'screens/upload_report_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,9 +39,10 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/find-clinics': (context) => const FindClinicsScreen(),
         '/system-log': (context) => const SystemLogScreen(),
+        '/reports': (context) => const ReportScreen(),
       },
 
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: AppTheme.light,
     );
   }
 }
