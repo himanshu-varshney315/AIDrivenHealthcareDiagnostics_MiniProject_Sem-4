@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 
 class AppBottomBar extends StatefulWidget {
   final String selectedItem;
@@ -75,14 +76,17 @@ class _AppBottomBarState extends State<AppBottomBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.95)),
+        boxShadow: const [
           BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 20,
-            offset: Offset(0, -8),
+            color: Color(0x14000000),
+            blurRadius: 28,
+            offset: Offset(0, -4),
           ),
         ],
       ),
@@ -93,6 +97,7 @@ class _AppBottomBarState extends State<AppBottomBar> {
             Expanded(
               child: _BottomBarItem(
                 label: 'Dashboard',
+                displayLabel: 'Home',
                 icon: Icons.home_outlined,
                 selected: widget.selectedItem == 'Dashboard',
                 onTap: () => _onTap('Dashboard'),
@@ -101,9 +106,10 @@ class _AppBottomBarState extends State<AppBottomBar> {
             Expanded(
               child: _BottomBarItem(
                 label: 'Health AI',
+                displayLabel: 'Assistant',
                 icon: Icons.android_rounded,
                 customIcon: const _HealthAiNavIcon(),
-                accentColor: const Color(0xFF7F74D8),
+                accentColor: AppTheme.blue,
                 selected: widget.selectedItem == 'Health AI',
                 onTap: () => _onTap('Health AI'),
               ),
@@ -111,7 +117,9 @@ class _AppBottomBarState extends State<AppBottomBar> {
             Expanded(
               child: _BottomBarItem(
                 label: 'Analytics',
-                icon: Icons.bar_chart_rounded,
+                displayLabel: 'Analytics',
+                icon: Icons.query_stats_rounded,
+                accentColor: const Color(0xFF188A7A),
                 selected: widget.selectedItem == 'Analytics',
                 onTap: () => _onTap('Analytics'),
               ),
@@ -119,6 +127,7 @@ class _AppBottomBarState extends State<AppBottomBar> {
             Expanded(
               child: _BottomBarItem(
                 label: 'Clinics',
+                displayLabel: 'Clinics',
                 icon: Icons.add_location_alt_outlined,
                 selected: widget.selectedItem == 'Clinics',
                 onTap: () => _onTap('Clinics'),
@@ -127,6 +136,7 @@ class _AppBottomBarState extends State<AppBottomBar> {
             Expanded(
               child: _BottomBarItem(
                 label: 'My Profile',
+                displayLabel: 'Profile',
                 icon: Icons.person_outline_rounded,
                 profileImagePath: _profileImagePath,
                 selected: widget.selectedItem == 'My Profile',
@@ -142,6 +152,7 @@ class _AppBottomBarState extends State<AppBottomBar> {
 
 class _BottomBarItem extends StatelessWidget {
   final String label;
+  final String? displayLabel;
   final IconData icon;
   final bool selected;
   final String? profileImagePath;
@@ -153,6 +164,7 @@ class _BottomBarItem extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.displayLabel,
     this.selected = false,
     this.profileImagePath,
     this.customIcon,
@@ -166,43 +178,70 @@ class _BottomBarItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      borderRadius: BorderRadius.circular(22),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFF0F6FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 34,
-              height: 4,
-              decoration: BoxDecoration(
-                color: selected ? Colors.black : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             if (hasProfileImage)
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: FileImage(File(profileImagePath!)),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  gradient: selected
+                      ? const LinearGradient(
+                          colors: [AppTheme.blue, AppTheme.aqua],
+                        )
+                      : null,
+                  color: selected ? null : const Color(0xFFE8EDF6),
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundImage: FileImage(File(profileImagePath!)),
+                ),
               )
             else if (customIcon != null)
               customIcon!
             else
-              Icon(
-                icon,
-                color: selected ? Colors.black : accentColor,
-                size: 28,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : const Color(0xFFF4F7FA),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: selected
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x11000000),
+                            blurRadius: 12,
+                            offset: Offset(0, 6),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? AppTheme.navy : accentColor,
+                  size: 24,
+                ),
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              label,
+              displayLabel ?? label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? Colors.black : const Color(0xFF3F4450),
+                color: selected ? AppTheme.navy : const Color(0xFF566173),
               ),
             ),
           ],
