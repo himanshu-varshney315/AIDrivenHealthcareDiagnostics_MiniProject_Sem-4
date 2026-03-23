@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_service.dart';
+
 class ApiService {
   final String baseUrl = _resolveBaseUrl();
   static const Duration _requestTimeout = Duration(seconds: 12);
@@ -85,10 +87,12 @@ class ApiService {
 
   Future uploadReport(File file) async {
     try {
+      final headers = await _authorizedHeaders();
       var request = http.MultipartRequest(
         "POST",
         Uri.parse("$baseUrl/upload-report"),
       );
+      request.headers.addAll(headers);
 
       request.files.add(await http.MultipartFile.fromPath("file", file.path));
 
@@ -123,11 +127,34 @@ class ApiService {
 
   Future analyzeSymptoms(String symptomsText) async {
     try {
+      final headers = await _authorizedHeaders();
       var response = await http
           .post(
             Uri.parse("$baseUrl/analyze-symptoms"),
-            headers: {"Content-Type": "application/json"},
+            headers: {...headers, "Content-Type": "application/json"},
             body: jsonEncode({"symptoms_text": symptomsText}),
+          )
+          .timeout(_requestTimeout);
+
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError("Cannot reach backend at $baseUrl");
+    } on TimeoutException {
+      return _networkError("Request timed out. Backend may be down.");
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchReportHistory({int limit = 10}) async {
+    try {
+      final headers = await _authorizedHeaders();
+      final response = await http
+          .get(
+            Uri.parse("$baseUrl/reports/history?limit=$limit"),
+            headers: headers,
           )
           .timeout(_requestTimeout);
 
@@ -161,5 +188,14 @@ class ApiService {
 
   Map<String, dynamic> _networkError(String message) {
     return {"message": message, "status_code": 0};
+  }
+
+  Future<Map<String, String>> _authorizedHeaders() async {
+    final session = await AuthService().loadSession();
+    final token = session?.token.trim() ?? '';
+    if (token.isEmpty) {
+      return {};
+    }
+    return {"Authorization": "Bearer $token"};
   }
 }
