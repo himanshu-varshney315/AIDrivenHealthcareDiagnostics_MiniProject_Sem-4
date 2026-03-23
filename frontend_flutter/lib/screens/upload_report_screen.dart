@@ -3,7 +3,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
+import '../services/analysis_history_service.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_bottom_bar.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -13,6 +16,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
+  static const int _maxFileBytes = 10 * 1024 * 1024;
   File? selectedFile;
   bool isLoading = false;
   Map<String, dynamic>? analysisResult;
@@ -35,6 +39,13 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Future uploadReport() async {
     if (selectedFile == null) return;
+    final fileSize = await selectedFile!.length();
+    if (fileSize > _maxFileBytes) {
+      setState(() {
+        errorMessage = 'Selected file is larger than 10 MB.';
+      });
+      return;
+    }
 
     setState(() {
       isLoading = true;
@@ -53,6 +64,9 @@ class _ReportScreenState extends State<ReportScreen> {
         }
         analysisResult = Map<String, dynamic>.from(response);
       });
+      if (analysisResult != null) {
+        await AnalysisHistoryService().saveLastAnalysis(analysisResult!);
+      }
     } catch (e) {
       setState(() {
         errorMessage = "Error: Could not analyze report.";
@@ -69,15 +83,25 @@ class _ReportScreenState extends State<ReportScreen> {
     final fileName = selectedFile == null
         ? null
         : p.basename(selectedFile!.path);
+    final fileExtension = fileName == null ? null : p.extension(fileName).toUpperCase();
     final confidence = ((analysisResult?["confidence"] ?? 0) as num).toDouble();
     final symptoms =
         (analysisResult?["extracted_symptoms"] as List<dynamic>? ?? [])
             .map((item) => item.toString())
             .toList();
     final explanation = analysisResult?["explanation"]?.toString() ?? "";
+    final urgency = analysisResult?["urgency"]?.toString().toLowerCase() ?? "";
+    final recommendations =
+        (analysisResult?["recommendations"] as List<dynamic>? ?? [])
+            .map((item) => item.toString())
+            .toList();
+    final precautions = (analysisResult?["precautions"] as List<dynamic>? ?? [])
+        .map((item) => item.toString())
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
+      bottomNavigationBar: const AppBottomBar(selectedItem: 'Reports'),
       body: Stack(
         children: [
           const _ReportBackdrop(),
@@ -94,11 +118,22 @@ class _ReportScreenState extends State<ReportScreen> {
                         onTap: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        "Upload Report",
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Reports",
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(fontSize: 28),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Upload and review AI-ready medical files.",
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppTheme.textMuted),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -140,16 +175,12 @@ class _ReportScreenState extends State<ReportScreen> {
                         ),
                         const SizedBox(height: 18),
                         const Text(
-                          "Medical Report Analysis",
-                          style: TextStyle(
-                            fontSize: 25,
-                            height: 1.1,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          "Clinical report analysis",
+                          style: TextStyle(fontSize: 25, height: 1.1, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          "Upload a PDF report and let the AI extract findings, detect symptoms, and estimate the most likely disease category.",
+                          "Turn a report into a structured summary with symptoms, urgency, and next-step guidance.",
                           style: TextStyle(
                             fontSize: 15,
                             height: 1.35,
@@ -163,7 +194,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           children: const [
                             _InfoChip(
                               icon: Icons.picture_as_pdf_outlined,
-                              label: "PDF only",
+                              label: "PDF reports",
                             ),
                             _InfoChip(
                               icon: Icons.psychology_alt_outlined,
@@ -171,7 +202,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                             _InfoChip(
                               icon: Icons.monitor_heart_outlined,
-                              label: "Symptom extraction",
+                              label: "Urgency flag",
                             ),
                           ],
                         ),
@@ -184,15 +215,12 @@ class _ReportScreenState extends State<ReportScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Choose File",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          "Choose file",
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          "Use a text-based or OCR-readable medical PDF for the best results.",
+                          "Use a readable medical PDF. Files up to 10 MB are supported.",
                           style: TextStyle(
                             fontSize: 14,
                             color: Color(0xFF667083),
@@ -245,12 +273,33 @@ class _ReportScreenState extends State<ReportScreen> {
                                       Text(
                                         fileName == null
                                             ? "Tap to browse from device storage"
-                                            : "Ready for analysis",
+                                            : "Ready to analyze",
                                         style: const TextStyle(
                                           fontSize: 13,
                                           color: Color(0xFF6B7380),
                                         ),
                                       ),
+                                      if (fileExtension != null) ...[
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF4FF),
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            fileExtension.replaceFirst('.', ''),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppTheme.blue,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -287,13 +336,35 @@ class _ReportScreenState extends State<ReportScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
-                                    "Upload & Analyze",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                : const Text("Analyze report", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F9FD),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.lock_outline_rounded,
+                                color: AppTheme.navy,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "Reports are analyzed securely and your latest result stays available in the dashboard.",
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.textMuted,
+                                    fontWeight: FontWeight.w600,
                                   ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -340,6 +411,8 @@ class _ReportScreenState extends State<ReportScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 14),
+                          _RiskBanner(urgency: urgency, confidence: confidence),
                           const SizedBox(height: 16),
                           _ResultBlock(
                             title: "Detected Symptoms",
@@ -376,6 +449,46 @@ class _ReportScreenState extends State<ReportScreen> {
                               ),
                             ),
                           ),
+                          if (recommendations.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "Recommendations",
+                              icon: Icons.fact_check_outlined,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: recommendations
+                                    .map(
+                                      (item) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: _AdviceRow(text: item),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ],
+                          if (precautions.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "Precautions",
+                              icon: Icons.health_and_safety_outlined,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: precautions
+                                    .map(
+                                      (item) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: _AdviceRow(text: item),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -579,6 +692,57 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
+class _RiskBanner extends StatelessWidget {
+  final String urgency;
+  final double confidence;
+
+  const _RiskBanner({required this.urgency, required this.confidence});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (urgency) {
+      'high' => const Color(0xFFE46B78),
+      'low' => const Color(0xFF44A775),
+      _ => const Color(0xFFF0A247),
+    };
+    final label = urgency.isEmpty
+        ? 'Analysis ready'
+        : '${urgency[0].toUpperCase()}${urgency.substring(1)} urgency';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: confidence.clamp(0, 1),
+              minHeight: 10,
+              backgroundColor: Colors.white,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ResultBlock extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -644,6 +808,36 @@ class _SymptomChip extends StatelessWidget {
           color: Color(0xFF456ACF),
         ),
       ),
+    );
+  }
+}
+
+class _AdviceRow extends StatelessWidget {
+  final String text;
+
+  const _AdviceRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 5),
+          child: Icon(Icons.circle, size: 8, color: Color(0xFF5E84ED)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.35,
+              color: Color(0xFF4F5664),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
