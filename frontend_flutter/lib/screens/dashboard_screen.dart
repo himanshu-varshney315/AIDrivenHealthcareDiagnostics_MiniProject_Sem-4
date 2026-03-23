@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/analysis_history_service.dart';
+import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_bar.dart';
-import 'upload_report_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,6 +17,9 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   String _userName = 'User Name';
   String _userEmail = '';
+  Map<String, dynamic>? _latestAnalysis;
+  Map<String, dynamic>? _trendSummary;
+  List<Map<String, dynamic>> _analysisHistory = const [];
   bool _isInitialized = false;
 
   static const _profileNameKey = 'profile_name';
@@ -62,6 +67,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? savedEmail!.trim()
           : activeEmail;
     });
+
+    final latestAnalysis = await AnalysisHistoryService().loadLastAnalysis();
+    final historyResponse = await ApiService().fetchReportHistory(limit: 6);
+    if (!mounted) return;
+    setState(() {
+      _latestAnalysis = latestAnalysis;
+      if ((historyResponse['status_code'] ?? 200) < 400) {
+        _trendSummary =
+            historyResponse['trend_summary'] as Map<String, dynamic>?;
+        _analysisHistory =
+            (historyResponse['history'] as List<dynamic>? ?? const [])
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList();
+        if (_latestAnalysis == null && _analysisHistory.isNotEmpty) {
+          _latestAnalysis = _analysisHistory.first;
+        }
+      }
+    });
   }
 
   String? _readScopedValue({
@@ -102,16 +126,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ).showSnackBar(SnackBar(content: Text('$label is coming soon')));
   }
 
+  String _urgencyLabel() {
+    final urgency = (_latestAnalysis?['urgency'] as String? ?? '')
+        .toLowerCase();
+    if (urgency.isEmpty) return 'No recent analysis';
+    return '${urgency[0].toUpperCase()}${urgency.substring(1)} priority';
+  }
+
+  int _highUrgencyCount() {
+    return (_trendSummary?['high_urgency_count'] as num?)?.toInt() ?? 0;
+  }
+
+  String _trendDirectionLabel() {
+    final direction = (_trendSummary?['direction'] as String? ?? 'stable')
+        .toLowerCase();
+    switch (direction) {
+      case 'improving':
+        return 'Improving';
+      case 'worsening':
+        return 'Needs attention';
+      case 'changed':
+        return 'Pattern changed';
+      case 'baseline':
+        return 'Baseline ready';
+      default:
+        return 'Stable';
+    }
+  }
+
+  String _currentDateLabel() {
+    const weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    final now = DateTime.now();
+    return '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    const int steps = 8450;
-    const int goal = 10000;
-    const String sleepDuration = '7h 15m';
-    const double hydrationProgress = 0.74;
-    final double stepProgress = (steps / goal).clamp(0, 1);
+    final int analysisCount = _analysisHistory.length;
+    final int historyGoal = 6;
+    final double averageConfidence =
+        ((_trendSummary?['average_confidence'] ?? 0) as num).toDouble();
+    final double historyProgress = (analysisCount / historyGoal).clamp(0, 1);
+    final String confidenceLabel =
+        '${(averageConfidence * 100).toStringAsFixed(1)}%';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: AppTheme.background,
       bottomNavigationBar: const AppBottomBar(selectedItem: 'Dashboard'),
       body: Stack(
         children: [
@@ -124,13 +206,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
-                        child: Text(
-                          'Health Dashboard',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Health AI',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(fontSize: 30),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _currentDateLabel(),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: AppTheme.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
                       Row(
@@ -139,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             icon: Icons.chat_bubble_outline_rounded,
                             onTap: () => _showComingSoon('Messages'),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           _HeaderActionButton(
                             icon: Icons.notifications_none_rounded,
                             onTap: () => _showComingSoon('Notifications'),
@@ -154,7 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFF5FBFF), Color(0xFFF7F1FF)],
+                        colors: [Color(0xFFF7FBFE), Color(0xFFF1F7FA)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -173,50 +269,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE9F6FF),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.wb_sunny_outlined,
-                                size: 16,
-                                color: Color(0xFF468AD8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F4F8),
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Daily overview',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black.withValues(alpha: 0.68),
-                                ),
+                              child: const Icon(
+                                Icons.favorite_rounded,
+                                color: AppTheme.aqua,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'For you',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Medical updates and quick actions',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppTheme.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 18),
-                        const Text(
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F4F8),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.wb_sunny_outlined,
+                                    size: 16,
+                                    color: AppTheme.aqua,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Daily overview',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black.withValues(alpha: 0.68),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.78),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: const Color(0xFFE0E8EE)),
+                              ),
+                              child: Text(
+                                '${analysisCount.toString().padLeft(2, '0')} reports tracked',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.navy,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
                           'Welcome back',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontSize: 18,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${_greeting()},\n$_userName!',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            height: 1.03,
-                            fontWeight: FontWeight.w800,
+                          '${_greeting()}, $_userName',
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            fontSize: 34,
+                            height: 1.08,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -229,11 +385,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: Colors.black.withValues(alpha: 0.65),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/reports'),
+                            icon: const Icon(Icons.description_outlined),
+                            label: const Text('View reports'),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
-                          children: const [
+                          children: [
                             _InsightChip(
                               icon: Icons.favorite_border_rounded,
                               label: 'Consistency',
@@ -243,6 +412,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               icon: Icons.water_drop_outlined,
                               label: 'Hydration',
                               value: '74%',
+                            ),
+                            _InsightChip(
+                              icon: Icons.insights_outlined,
+                              label: 'Last analysis',
+                              value: _urgencyLabel(),
                             ),
                           ],
                         ),
@@ -275,7 +449,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const _SuggestionCard(),
+                        _SuggestionCard(
+                          message:
+                              _trendSummary?['message']?.toString() ??
+                              'Keep uploading reports over time so Health AI can compare patterns and show meaningful changes.',
+                        ),
+                        if (_latestAnalysis != null) ...[
+                          const SizedBox(height: 18),
+                          _LatestAnalysisCard(analysis: _latestAnalysis!),
+                        ],
+                        if (_trendSummary != null) ...[
+                          const SizedBox(height: 18),
+                          _TrendComparisonCard(
+                            trendSummary: _trendSummary!,
+                            history: _analysisHistory,
+                          ),
+                        ],
                         const SizedBox(height: 22),
                         Wrap(
                           spacing: 18,
@@ -283,22 +472,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             _QuickAction(
                               icon: Icons.upload_file_rounded,
-                              label: 'Upload\nReport',
-                              iconColor: const Color(0xFFF0A247),
-                              backgroundColor: const Color(0xFFFFEEDA),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ReportScreen(),
-                                ),
-                              ),
+                              label: 'Upload report',
+                              iconColor: AppTheme.blue,
+                              backgroundColor: const Color(0xFFEAF3FF),
+                              onTap: () => Navigator.pushNamed(context, '/reports'),
+                            ),
+                            _QuickAction(
+                              icon: Icons.auto_awesome_rounded,
+                              label: 'Ask Health AI',
+                              iconColor: AppTheme.aqua,
+                              backgroundColor: const Color(0xFFEAF8F6),
+                              onTap: () =>
+                                  Navigator.pushNamed(context, '/health-ai'),
                             ),
                             _QuickAction(
                               icon: Icons.monitor_heart_outlined,
-                              label: 'System\nLog',
-                              iconColor: const Color(0xFFE77992),
-                              backgroundColor: const Color(0xFFFFE8EF),
-                              onTap: () => _showComingSoon('System Log'),
+                              label: 'System log',
+                              iconColor: const Color(0xFF2B8F83),
+                              backgroundColor: const Color(0xFFEAF7F4),
+                              onTap: () =>
+                                  Navigator.pushNamed(context, '/system-log'),
                             ),
                           ],
                         ),
@@ -315,11 +508,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (context, constraints) {
                             final cards = [
                               _StepsCard(
-                                steps: steps,
-                                goal: goal,
-                                progress: stepProgress,
+                                steps: analysisCount,
+                                goal: historyGoal,
+                                progress: historyProgress,
                               ),
-                              const _SleepCard(durationLabel: sleepDuration),
+                              _SleepCard(durationLabel: confidenceLabel),
                             ];
 
                             if (constraints.maxWidth < 380) {
@@ -343,8 +536,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           },
                         ),
                         const SizedBox(height: 14),
-                        const _MiniSummaryRow(
-                          hydrationProgress: hydrationProgress,
+                        _MiniSummaryRow(
+                          trendLabel: _trendDirectionLabel(),
+                          highUrgencyCount: _highUrgencyCount(),
                         ),
                       ],
                     ),
@@ -369,7 +563,7 @@ class _DashboardBackdrop extends StatelessWidget {
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFEAF6FF), Color(0xFFF6F0FF), Color(0xFFF8FAFD)],
+              colors: [Color(0xFFF5FAFC), Color(0xFFF0F6FA), Color(0xFFEDF5F8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -378,17 +572,17 @@ class _DashboardBackdrop extends StatelessWidget {
         const Positioned(
           top: -40,
           right: -10,
-          child: _GlowBubble(size: 180, color: Color(0x80D9D2FF)),
+          child: _GlowBubble(size: 180, color: Color(0x4DCAE7E4)),
         ),
         const Positioned(
           top: 80,
           left: -30,
-          child: _GlowBubble(size: 140, color: Color(0x8097E2FF)),
+          child: _GlowBubble(size: 140, color: Color(0x4DAFD5F3)),
         ),
         const Positioned(
           bottom: 120,
           right: -20,
-          child: _GlowBubble(size: 160, color: Color(0x80FFE4C7)),
+          child: _GlowBubble(size: 160, color: Color(0x33C7E4DD)),
         ),
       ],
     );
@@ -461,15 +655,15 @@ class _HeaderActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.82),
+      color: Colors.white.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: SizedBox(
-          width: 62,
-          height: 62,
-          child: Icon(icon, size: 28, color: const Color(0xFF1F2430)),
+          width: 56,
+          height: 56,
+          child: Icon(icon, size: 24, color: const Color(0xFF1F2430)),
         ),
       ),
     );
@@ -477,7 +671,9 @@ class _HeaderActionButton extends StatelessWidget {
 }
 
 class _SuggestionCard extends StatelessWidget {
-  const _SuggestionCard();
+  final String message;
+
+  const _SuggestionCard({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -485,7 +681,7 @@ class _SuggestionCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFF7F5FA), Color(0xFFF9FBFF)],
+          colors: [Color(0xFFF6FBFC), Color(0xFFF8FCFF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -505,27 +701,27 @@ class _SuggestionCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDEAF9),
+              color: const Color(0xFFE8F5F3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.auto_awesome_outlined,
-              color: Color(0xFF8270D8),
+              Icons.medical_information_outlined,
+              color: AppTheme.aqua,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Health AI Suggestion',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Your sleep pattern is improving. Try to maintain the same bedtime tonight for better recovery and focus tomorrow.',
-                  style: TextStyle(
+                  message,
+                  style: const TextStyle(
                     fontSize: 15,
                     height: 1.35,
                     color: Color(0xFF505665),
@@ -534,6 +730,253 @@ class _SuggestionCard extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendComparisonCard extends StatelessWidget {
+  final Map<String, dynamic> trendSummary;
+  final List<Map<String, dynamic>> history;
+
+  const _TrendComparisonCard({
+    required this.trendSummary,
+    required this.history,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = (trendSummary['direction']?.toString() ?? 'stable')
+        .toLowerCase();
+    final directionColor = switch (direction) {
+      'improving' => const Color(0xFF2EA36D),
+      'worsening' => const Color(0xFFE46E76),
+      'changed' => const Color(0xFF4F84ED),
+      _ => const Color(0xFFF0A247),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FCFD),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Trend Comparison',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: directionColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  direction.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: directionColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            trendSummary['message']?.toString() ??
+                'More reports will help compare your health trend over time.',
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: Color(0xFF576070),
+            ),
+          ),
+          if (history.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 62,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: history
+                    .take(6)
+                    .toList()
+                    .reversed
+                    .map((entry) => Expanded(child: _TrendBar(entry: entry)))
+                    .toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendBar extends StatelessWidget {
+  final Map<String, dynamic> entry;
+
+  const _TrendBar({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final confidence = ((entry['confidence'] ?? 0) as num).toDouble().clamp(
+      0,
+      1,
+    );
+    final urgency = (entry['urgency']?.toString() ?? 'medium').toLowerCase();
+    final color = switch (urgency) {
+      'high' => const Color(0xFFE46E76),
+      'low' => const Color(0xFF2EA36D),
+      _ => const Color(0xFFF0A247),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: 22,
+                height: 18 + (confidence * 40),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            entry['source_type']?.toString() == 'symptom' ? 'AI' : 'PDF',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF657082),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LatestAnalysisCard extends StatelessWidget {
+  final Map<String, dynamic> analysis;
+
+  const _LatestAnalysisCard({required this.analysis});
+
+  @override
+  Widget build(BuildContext context) {
+    final prediction = analysis['prediction']?.toString() ?? 'Unknown';
+    final confidence = ((analysis['confidence'] ?? 0) as num).toDouble();
+    final urgency = (analysis['urgency']?.toString() ?? 'medium').toLowerCase();
+    final precautions = (analysis['precautions'] as List<dynamic>? ?? const [])
+        .map((item) => item.toString())
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
+    final color = switch (urgency) {
+      'high' => const Color(0xFFE46E76),
+      'low' => const Color(0xFF45A979),
+      _ => const Color(0xFFF0A247),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF8FBFF), Color(0xFFFFF7EF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE7ECF5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Latest Report Snapshot',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  urgency.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            prediction,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: confidence.clamp(0, 1),
+              minHeight: 10,
+              backgroundColor: const Color(0xFFE6EAF1),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Confidence ${(confidence * 100).toStringAsFixed(1)}%',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF5E6675),
+            ),
+          ),
+          if (precautions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              precautions.first,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.35,
+                color: Color(0xFF555D6A),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -559,28 +1002,34 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        width: 88,
+      borderRadius: BorderRadius.circular(24),
+      child: Ink(
+        width: 148,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE7EDF7)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 58,
-              height: 58,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: backgroundColor,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(icon, color: iconColor, size: 30),
+              child: Icon(icon, color: iconColor, size: 26),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               label,
               style: const TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
-                height: 1.15,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
               ),
             ),
           ],
@@ -629,14 +1078,11 @@ class _StepsCard extends StatelessWidget {
               CircleAvatar(
                 radius: 21,
                 backgroundColor: Color(0xFFE8F2FF),
-                child: Icon(
-                  Icons.directions_walk_rounded,
-                  color: Color(0xFF5798E9),
-                ),
+                child: Icon(Icons.timeline_rounded, color: Color(0xFF5798E9)),
               ),
               SizedBox(width: 10),
               Text(
-                'Steps',
+                'Analyses',
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
               ),
             ],
@@ -673,7 +1119,7 @@ class _StepsCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        'steps',
+                        'records',
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF555A66),
@@ -709,7 +1155,7 @@ class _StepsCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${(progress * 100).round()}% of today\'s movement target',
+            '${(progress * 100).round()}% of your comparison history target',
             style: const TextStyle(fontSize: 13, color: Color(0xFF6B7483)),
           ),
         ],
@@ -759,11 +1205,11 @@ class _SleepCard extends StatelessWidget {
               CircleAvatar(
                 radius: 21,
                 backgroundColor: Color(0xFFF1E8FF),
-                child: Icon(Icons.nightlight_round, color: Color(0xFF9B6AE4)),
+                child: Icon(Icons.analytics_outlined, color: Color(0xFF9B6AE4)),
               ),
               SizedBox(width: 10),
               Text(
-                'Sleep',
+                'Confidence',
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
               ),
             ],
@@ -781,7 +1227,7 @@ class _SleepCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Steady rest rhythm through the night',
+            'Average confidence across recent analyses',
             style: TextStyle(fontSize: 13, color: Color(0xFF6B7483)),
           ),
         ],
@@ -852,9 +1298,13 @@ class _SleepChartPainter extends CustomPainter {
 }
 
 class _MiniSummaryRow extends StatelessWidget {
-  final double hydrationProgress;
+  final String trendLabel;
+  final int highUrgencyCount;
 
-  const _MiniSummaryRow({required this.hydrationProgress});
+  const _MiniSummaryRow({
+    required this.trendLabel,
+    required this.highUrgencyCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -862,21 +1312,21 @@ class _MiniSummaryRow extends StatelessWidget {
       children: [
         Expanded(
           child: _MiniStatCard(
-            icon: Icons.water_drop_outlined,
-            title: 'Hydration',
-            subtitle: '${(hydrationProgress * 100).round()}% complete',
+            icon: Icons.insights_outlined,
+            title: 'Trend',
+            subtitle: trendLabel,
             accentColor: const Color(0xFF4AA5F1),
             backgroundColor: const Color(0xFFEAF6FF),
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: _MiniStatCard(
-            icon: Icons.favorite_outline_rounded,
-            title: 'Recovery',
-            subtitle: 'Resting strong today',
-            accentColor: Color(0xFFE26E7D),
-            backgroundColor: Color(0xFFFFEEF1),
+            icon: Icons.warning_amber_rounded,
+            title: 'High Urgency',
+            subtitle: '$highUrgencyCount recent alerts',
+            accentColor: const Color(0xFFE26E7D),
+            backgroundColor: const Color(0xFFFFEEF1),
           ),
         ),
       ],
