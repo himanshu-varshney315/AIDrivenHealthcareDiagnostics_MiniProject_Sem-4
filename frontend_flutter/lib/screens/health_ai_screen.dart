@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_bar.dart';
 
 class HealthAiScreen extends StatefulWidget {
@@ -88,18 +89,18 @@ class _HealthAiScreenState extends State<HealthAiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F7FC),
+      backgroundColor: AppTheme.background,
       bottomNavigationBar: const AppBottomBar(selectedItem: 'Health AI'),
       appBar: AppBar(
-        title: const Text('Health AI'),
+        title: const Text('Assistant'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: const Color(0xFF1F2430),
+        foregroundColor: AppTheme.textPrimary,
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEAF6FF), Color(0xFFF6F0FF), Color(0xFFF8FAFD)],
+            colors: [Color(0xFFF5FAFC), Color(0xFFF0F7FA), Color(0xFFEEF5F8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -151,7 +152,7 @@ class _ConversationHero extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1E2C45), Color(0xFF31476F)],
+          colors: [AppTheme.navy, Color(0xFF24526F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -177,7 +178,7 @@ class _ConversationHero extends StatelessWidget {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Chat with Health AI',
+                  'Talk to Health AI',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -189,7 +190,7 @@ class _ConversationHero extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            'Tell me what you are feeling, how long it has been happening, and any details like fever, cough, pain, or fatigue.',
+            'Describe symptoms, timing, and intensity. You will get a calmer medical summary with precautions and care guidance.',
             style: TextStyle(
               fontSize: 14,
               height: 1.5,
@@ -211,19 +212,19 @@ class _SafetyBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7E8),
+        color: const Color(0xFFF7FBFD),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF3D795)),
+        border: Border.all(color: const Color(0xFFDCE8EF)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, color: Color(0xFFAA7A15)),
+          Icon(Icons.shield_outlined, color: AppTheme.aqua),
           SizedBox(width: 10),
           Expanded(
             child: Text(
               'Supportive guidance only. Use a doctor or emergency care for severe, worsening, or persistent symptoms.',
-              style: TextStyle(height: 1.4, color: Color(0xFF6D5619)),
+              style: TextStyle(height: 1.4, color: AppTheme.textMuted),
             ),
           ),
         ],
@@ -248,7 +249,7 @@ class _QuickPromptTray extends StatelessWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1F2430),
+            color: AppTheme.textPrimary,
           ),
         ),
         const SizedBox(height: 10),
@@ -264,12 +265,18 @@ class _QuickPromptTray extends StatelessWidget {
                 onPressed: () => onPromptTap(prompt),
                 backgroundColor: Colors.white.withValues(alpha: 0.96),
                 side: BorderSide(
-                  color: const Color(0xFFD9E2F0).withValues(alpha: 0.9),
+                  color: const Color(0xFFD9E4EA).withValues(alpha: 0.95),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                label: Text(prompt),
+                label: Text(
+                  prompt,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               );
             },
           ),
@@ -288,9 +295,9 @@ class _ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == _MessageRole.user;
     final bubbleColor = isUser
-        ? const Color(0xFF243148)
-        : Colors.white.withValues(alpha: 0.96);
-    final textColor = isUser ? Colors.white : const Color(0xFF364152);
+        ? AppTheme.navy
+        : Colors.white.withValues(alpha: 0.97);
+    final textColor = isUser ? Colors.white : AppTheme.textPrimary;
     final crossAxisAlignment = isUser
         ? CrossAxisAlignment.end
         : CrossAxisAlignment.start;
@@ -313,9 +320,9 @@ class _ChatBubble extends StatelessWidget {
                     radius: 14,
                     backgroundColor: Color(0xFFDBE9FF),
                     child: Icon(
-                      Icons.health_and_safety_rounded,
+                      Icons.favorite_rounded,
                       size: 16,
-                      color: Color(0xFF315EA8),
+                      color: AppTheme.blue,
                     ),
                   ),
                 if (!isUser) const SizedBox(width: 8),
@@ -413,11 +420,11 @@ class _AdviceSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F9FF),
+        color: const Color(0xFFF7FBFD),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDDE7F5)),
+        border: Border.all(color: const Color(0xFFDCE7EE)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

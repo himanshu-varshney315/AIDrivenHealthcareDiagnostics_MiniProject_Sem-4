@@ -98,6 +98,24 @@ class _ReportScreenState extends State<ReportScreen> {
     final precautions = (analysisResult?["precautions"] as List<dynamic>? ?? [])
         .map((item) => item.toString())
         .toList();
+    final medicines =
+        (analysisResult?["recommended_medicines"] as List<dynamic>? ?? [])
+            .map((item) => item.toString())
+            .toList();
+    final seekCare = analysisResult?["seek_care"]?.toString() ?? "";
+    final trendSummary =
+        analysisResult?["trend_summary"] as Map<String, dynamic>?;
+    final probabilityEntries =
+        (analysisResult?["probabilities"] as Map<String, dynamic>? ?? const {})
+            .entries
+            .map(
+              (entry) => MapEntry(
+                entry.key,
+                (entry.value as num?)?.toDouble() ?? 0.0,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
@@ -449,6 +467,39 @@ class _ReportScreenState extends State<ReportScreen> {
                               ),
                             ),
                           ),
+                          if (probabilityEntries.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "Explainable AI View",
+                              icon: Icons.insights_outlined,
+                              child: Column(
+                                children: probabilityEntries
+                                    .take(4)
+                                    .map(
+                                      (entry) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
+                                        child: _ProbabilityRow(
+                                          label: entry.key,
+                                          value: entry.value,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ],
+                          if (trendSummary != null) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "Trend Summary",
+                              icon: Icons.timeline_rounded,
+                              child: _TrendSummaryCard(
+                                trendSummary: trendSummary,
+                              ),
+                            ),
+                          ],
                           if (recommendations.isNotEmpty) ...[
                             const SizedBox(height: 14),
                             _ResultBlock(
@@ -457,6 +508,26 @@ class _ReportScreenState extends State<ReportScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: recommendations
+                                    .map(
+                                      (item) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: _AdviceRow(text: item),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ],
+                          if (medicines.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "Medication Guidance",
+                              icon: Icons.medication_outlined,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: medicines
                                     .map(
                                       (item) => Padding(
                                         padding: const EdgeInsets.only(
@@ -486,6 +557,21 @@ class _ReportScreenState extends State<ReportScreen> {
                                       ),
                                     )
                                     .toList(),
+                              ),
+                            ),
+                          ],
+                          if (seekCare.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _ResultBlock(
+                              title: "When To Seek Care",
+                              icon: Icons.local_hospital_outlined,
+                              child: Text(
+                                seekCare,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.45,
+                                  color: Color(0xFF4F5664),
+                                ),
                               ),
                             ),
                           ],
@@ -835,6 +921,130 @@ class _AdviceRow extends StatelessWidget {
               height: 1.35,
               color: Color(0xFF4F5664),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProbabilityRow extends StatelessWidget {
+  final String label;
+  final double value;
+
+  const _ProbabilityRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (value.clamp(0, 1) * 100).toStringAsFixed(1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              '$percent%',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5D6674),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: value.clamp(0, 1),
+            minHeight: 9,
+            backgroundColor: const Color(0xFFE7ECF5),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF5E84ED)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrendSummaryCard extends StatelessWidget {
+  final Map<String, dynamic> trendSummary;
+
+  const _TrendSummaryCard({required this.trendSummary});
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = (trendSummary["direction"]?.toString() ?? "stable")
+        .toLowerCase();
+    final averageConfidence =
+        ((trendSummary["average_confidence"] ?? 0) as num).toDouble();
+    final highUrgencyCount =
+        ((trendSummary["high_urgency_count"] ?? 0) as num).toInt();
+    final badgeColor = switch (direction) {
+      "improving" => const Color(0xFF44A775),
+      "worsening" => const Color(0xFFE46B78),
+      "changed" => const Color(0xFF5E84ED),
+      _ => const Color(0xFFF0A247),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                direction.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: badgeColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Avg confidence ${(averageConfidence * 100).toStringAsFixed(1)}%',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5D6674),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          trendSummary["message"]?.toString() ??
+              "Keep uploading reports to unlock stronger comparisons over time.",
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.4,
+            color: Color(0xFF4F5664),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '$highUrgencyCount recent high-urgency analyses detected.',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF677182),
           ),
         ),
       ],

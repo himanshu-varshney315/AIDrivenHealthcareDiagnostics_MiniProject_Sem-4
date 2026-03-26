@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_bar.dart';
 
 const _googleMapsApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
@@ -216,14 +217,14 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: AppTheme.background,
       bottomNavigationBar: const AppBottomBar(selectedItem: 'Clinics'),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Nearby Clinics',
+          'Care Nearby',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
@@ -236,11 +237,12 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFEFF7FF), Color(0xFFF7F2FF)],
+                  colors: [Color(0xFFF4FBFD), Color(0xFFEDF7FA)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFDDE8EE)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,11 +255,11 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
                   Text(
                     _googleMapsApiKey.isEmpty
                         ? 'Add your Google Maps API key to activate live nearby clinic search.'
-                        : 'Using your current location to surface nearby clinics with map pins and directions.',
+                        : 'Using your current location to show nearby clinics, map pins, and quick directions.',
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.45,
-                      color: Color(0xFF5B6270),
+                      color: AppTheme.textMuted,
                     ),
                   ),
                 ],
@@ -331,7 +333,7 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
                     label: const Text('Refresh Nearby'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: const Color(0xFF3D8BFF),
+                      backgroundColor: AppTheme.blue,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
@@ -346,15 +348,16 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E5),
+                  color: const Color(0xFFF8FBFD),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFDDE7ED)),
                 ),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(
                     fontSize: 14,
                     height: 1.4,
-                    color: Color(0xFF6E5840),
+                    color: AppTheme.textMuted,
                   ),
                 ),
               ),
@@ -415,12 +418,12 @@ class _ClinicCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF3FF),
+                  color: const Color(0xFFEAF6F7),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.local_hospital_rounded,
-                  color: Color(0xFF3D8BFF),
+                  color: AppTheme.aqua,
                 ),
               ),
               const SizedBox(width: 14),
