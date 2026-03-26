@@ -1,47 +1,45 @@
 import os
 
 from flask import Flask
-from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from sqlalchemy import text
 
+from config import get_jwt_secret_key
 from database.db import db
 from routes.auth_routes import auth_bp
 from routes.report_routes import report_bp
-
-app = Flask(__name__)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-app.config["JWT_SECRET_KEY"] = os.environ.get(
-    "JWT_SECRET_KEY",
-    "dev-jwt-secret-key-change-me-32chars",
-)
-
-CORS(app)
-
-db.init_app(app)
-
-jwt = JWTManager(app)
-
-app.register_blueprint(auth_bp)
-app.register_blueprint(report_bp)
+from services.auth_management import bcrypt
+from services.app_bootstrap import configure_cors, initialize_database, install_security_headers
 
 
-def ensure_user_name_column():
-    inspector_sql = text("PRAGMA table_info(user)")
-    columns = db.session.execute(inspector_sql).fetchall()
-    column_names = {row[1] for row in columns}
+def create_app(test_config: dict | None = None) -> Flask:
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+    app.config["JWT_SECRET_KEY"] = get_jwt_secret_key()
+    app.config["MAX_CONTENT_LENGTH"] = int(
+        os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))
+    )
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    if "name" not in column_names:
-        db.session.execute(
-            text("ALTER TABLE user ADD COLUMN name VARCHAR(120) NOT NULL DEFAULT 'User'")
-        )
-        db.session.commit()
+    if test_config:
+        app.config.update(test_config)
+
+    configure_cors(app)
+    install_security_headers(app)
+
+    db.init_app(app)
+    bcrypt.init_app(app)
+    JWTManager(app)
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(report_bp)
+
+    with app.app_context():
+        initialize_database()
+
+    return app
 
 
-with app.app_context():
-    db.create_all()
-    ensure_user_name_column()
+app = create_app()
 
 
 if __name__ == "__main__":
