@@ -1,9 +1,17 @@
 from io import BytesIO
 import shutil
-from PIL import Image
 
 import fitz
-import pdfplumber
+
+try:
+    import pdfplumber
+except ImportError:  # pragma: no cover
+    pdfplumber = None
+
+try:
+    from PIL import Image
+except ImportError:  # pragma: no cover
+    Image = None
 
 try:
     import pytesseract
@@ -16,9 +24,10 @@ def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
         return ""
 
     extracted = []
-    with pdfplumber.open(BytesIO(file_bytes)) as pdf:
-        for page in pdf.pages:
-            extracted.append(page.extract_text() or "")
+    if pdfplumber is not None:
+        with pdfplumber.open(BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                extracted.append(page.extract_text() or "")
 
     text = "\n".join(chunk.strip() for chunk in extracted if chunk).strip()
     if text:
@@ -36,7 +45,11 @@ def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
 
 
 def ocr_is_available() -> bool:
-    return pytesseract is not None and shutil.which("tesseract") is not None
+    return (
+        pytesseract is not None
+        and Image is not None
+        and shutil.which("tesseract") is not None
+    )
 
 
 def _extract_with_ocr(document: fitz.Document) -> str:

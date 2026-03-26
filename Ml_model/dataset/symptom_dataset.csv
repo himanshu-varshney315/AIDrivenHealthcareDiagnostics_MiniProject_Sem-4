@@ -41,12 +41,18 @@ text,label
 "i have runny nose and mild cough since yesterday",Common Cold
 "i feel stuffed nose, watery eyes and light throat irritation",Common Cold
 "i have cold symptoms with sneezing and nasal congestion",Common Cold
+"i have mild fever and slight cold since today",Common Cold
+"just mild fever with runny nose",Common Cold
+"i have low fever and sneezing",Common Cold
 "i have high fever, body ache and dry cough",Influenza
 "i suddenly got fever, chills and severe body pain",Influenza
 "i have flu symptoms with headache, cough and fatigue",Influenza
 "i feel feverish with chills, body aches and cough",Influenza
 "i have sudden fever and muscle pain with weakness",Influenza
 "i have influenza like symptoms and want relief",Influenza
+"i have fever since today",Influenza
+"only fever and mild body ache",Influenza
+"i feel mild fever and weakness",Influenza
 "i keep sneezing and my nose runs during pollen season",Allergic Rhinitis
 "i have itchy eyes, sneezing and watery nose",Allergic Rhinitis
 "my allergies are acting up with runny nose and nasal itching",Allergic Rhinitis
@@ -65,3 +71,23 @@ text,label
 "i have headache with sensitivity to sound and nausea",Migraine
 "i get migraine with aura and severe head pain",Migraine
 "i have pulsating headache and need rest in a dark room",Migraine
+"i have wheezing and chest tightness at night",Asthma
+"i feel shortness of breath with wheeze and cough",Asthma
+"my inhaler is not helping and i have chest tightness",Asthma
+"i get cough and wheezing after dust exposure",Asthma
+"i have trouble breathing with wheezing",Asthma
+"my face is drooping and my speech is slurred",Stroke
+"i suddenly cannot move my arm and words are unclear",Stroke
+"i have sudden weakness on one side and blurred speech",Stroke
+"my mouth feels twisted and i have arm weakness",Stroke
+"i suddenly lost clear speech and feel one sided weakness",Stroke
+"i have high fever with severe joint pain and rash",Chikungunya
+"my joints hurt badly with fever after mosquito bites",Chikungunya
+"i have fever, body pain, rash and swollen joints",Chikungunya
+"i feel intense joint pain and fever since yesterday",Chikungunya
+"i have chikungunya like fever with joint stiffness",Chikungunya
+"i have diarrhea and vomiting and feel very thirsty",Acute Diarrheal Disease
+"i have loose stool many times and signs of dehydration",Acute Diarrheal Disease
+"i feel weak with diarrhea and cannot keep fluids well",Acute Diarrheal Disease
+"i have watery diarrhea and stomach cramps",Acute Diarrheal Disease
+"i am passing loose motions and feel dehydrated",Acute Diarrheal Disease

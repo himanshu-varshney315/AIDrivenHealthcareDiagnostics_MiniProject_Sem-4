@@ -35,6 +35,15 @@ SYMPTOM_KEYWORDS = {
     "nausea",
     "vomiting",
     "retro orbital pain",
+    "wheezing",
+    "chest tightness",
+    "slurred speech",
+    "facial droop",
+    "arm weakness",
+    "vision loss",
+    "diarrhea",
+    "diarrhoea",
+    "dehydration",
 }
 
 DISEASE_KEYWORDS = {
@@ -47,6 +56,11 @@ DISEASE_KEYWORDS = {
     "heart failure",
     "dengue",
     "dengue fever",
+    "asthma",
+    "stroke",
+    "chikungunya",
+    "diarrheal disease",
+    "diarrhoeal disease",
 }
 
 MEDICATION_KEYWORDS = {
@@ -57,6 +71,9 @@ MEDICATION_KEYWORDS = {
     "aspirin",
     "atorvastatin",
     "iron",
+    "salbutamol",
+    "albuterol",
+    "ors",
 }
 
 LAB_PATTERNS = {

@@ -2,11 +2,20 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List
 
-import joblib
+try:
+    import joblib
+except ImportError:  # pragma: no cover
+    joblib = None
 
 from Ml_model.nlp_model.entity_extractor import EntityExtractor
-from Ml_model.training.trainer import MODEL_PATHS
 from Ml_model.utils.preprocessing import preprocess_text
+
+
+MODEL_DIR = Path(__file__).resolve().parent / "models"
+MODEL_PATHS = {
+    "report": MODEL_DIR / "report_disease_classifier.joblib",
+    "symptom": MODEL_DIR / "symptom_disease_classifier.joblib",
+}
 
 
 REPORT_DISEASE_KEYWORDS = {
@@ -16,6 +25,10 @@ REPORT_DISEASE_KEYWORDS = {
     "Anemia": ["hemoglobin", "hb", "pallor", "fatigue", "dizziness", "iron deficiency"],
     "Heart Disease": ["chest pain", "ecg", "troponin", "palpitations", "edema", "coronary", "heart failure"],
     "Dengue": ["dengue", "platelet", "thrombocytopenia", "rash", "body ache", "joint pain", "ns1"],
+    "Asthma": ["wheeze", "wheezing", "chest tightness", "shortness of breath", "night cough", "inhaler"],
+    "Stroke": ["facial droop", "slurred speech", "arm weakness", "vision loss", "sudden dizziness", "stroke"],
+    "Chikungunya": ["high fever", "joint pain", "severe joint pain", "rash", "chikungunya", "mosquito bite"],
+    "Acute Diarrheal Disease": ["diarrhea", "diarrhoea", "loose stool", "vomiting", "dehydration", "oral rehydration"],
 }
 
 SYMPTOM_DISEASE_KEYWORDS = {
@@ -231,6 +244,78 @@ DISEASE_GUIDANCE = {
         "seek_care": "Get medical care for severe, frequent, or unusual headaches, especially with neurological symptoms.",
         "urgency": "medium",
     },
+    "Asthma": {
+        "recommendations": [
+            "Avoid smoke, dust, and other known triggers while symptoms are active.",
+            "Use prescribed reliever/controller inhalers exactly as directed by your clinician.",
+            "Arrange medical review if cough, wheeze, or chest tightness keeps returning.",
+        ],
+        "precautions": [
+            "Seek urgent care if speaking is difficult, breathing worsens, or lips look blue.",
+            "Do not rely on repeated reliever use alone if symptoms are escalating.",
+            "Night-time symptoms or symptoms at rest need prompt review.",
+        ],
+        "recommended_medicines": [
+            "Only use inhalers already prescribed to you and use the spacer/device correctly.",
+            "Ask a clinician about inhaled corticosteroid access if symptoms recur.",
+        ],
+        "seek_care": "Urgent medical care is recommended for worsening shortness of breath, severe wheeze, or poor response to inhaler use.",
+        "urgency": "high",
+    },
+    "Stroke": {
+        "recommendations": [
+            "Treat sudden face droop, arm weakness, vision loss, or speech trouble as an emergency.",
+            "Note the exact time symptoms started because urgent treatment depends on timing.",
+            "Use emergency medical services immediately rather than waiting for symptoms to pass.",
+        ],
+        "precautions": [
+            "Do not drive yourself if stroke symptoms are suspected.",
+            "Do not delay urgent assessment because rapid treatment can reduce disability.",
+            "A transient improvement can still represent a medical emergency.",
+        ],
+        "recommended_medicines": [
+            "Do not self-start aspirin or other medicines unless a clinician has advised it after evaluation.",
+            "Immediate medical assessment is more important than home treatment.",
+        ],
+        "seek_care": "Emergency medical evaluation is needed immediately for any suspected stroke symptoms.",
+        "urgency": "high",
+    },
+    "Chikungunya": {
+        "recommendations": [
+            "Rest, take fluids, and monitor fever and joint pain closely.",
+            "Prevent mosquito bites while ill to reduce further spread.",
+            "Use medical review if fever and joint pain are significant or persistent.",
+        ],
+        "precautions": [
+            "Seek urgent care for dehydration, confusion, severe weakness, or vulnerable age groups.",
+            "Because symptoms overlap with dengue, worsening illness needs medical review.",
+            "Persistent joint pain after fever should still be medically assessed.",
+        ],
+        "recommended_medicines": [
+            "Acetaminophen/paracetamol may help fever or pain if safe for you.",
+            "Ask a clinician before using NSAIDs when dengue has not been ruled out.",
+        ],
+        "seek_care": "Prompt medical review is recommended for high fever with severe joint pain or worsening symptoms.",
+        "urgency": "medium",
+    },
+    "Acute Diarrheal Disease": {
+        "recommendations": [
+            "Start oral rehydration solution or fluids early to prevent dehydration.",
+            "Keep taking small frequent sips even if nausea is present.",
+            "Monitor urine output, thirst, weakness, and the ability to keep fluids down.",
+        ],
+        "precautions": [
+            "Seek urgent care for severe dehydration, confusion, lethargy, or inability to drink.",
+            "Blood in stool, ongoing vomiting, or shock symptoms need rapid evaluation.",
+            "Wash hands carefully to reduce spread to others.",
+        ],
+        "recommended_medicines": [
+            "Oral rehydration solution is often the first supportive step if safe and available.",
+            "Use antidiarrheal medicines only with clinician advice when symptoms are severe or atypical.",
+        ],
+        "seek_care": "Medical care is recommended quickly if dehydration signs, bloody stool, or persistent vomiting are present.",
+        "urgency": "medium",
+    },
 }
 
 RED_FLAG_TERMS = {
@@ -243,6 +328,41 @@ RED_FLAG_TERMS = {
     "blood in stool",
     "blood in vomit",
     "persistent vomiting",
+    "slurred speech",
+    "face droop",
+    "facial droop",
+    "arm weakness",
+    "vision loss",
+    "wheezing at rest",
+    "cannot breathe",
+    "severe dehydration",
+}
+
+SYMPTOM_SAFETY_PRIORS = {
+    "Common Cold": 1.2,
+    "Allergic Rhinitis": 1.15,
+    "Influenza": 1.08,
+    "Migraine": 1.0,
+    "Viral Gastroenteritis": 1.0,
+    "Anemia": 0.96,
+    "Hypertension": 0.95,
+    "Diabetes": 0.94,
+    "Dengue": 0.8,
+    "Pneumonia": 0.72,
+    "Heart Disease": 0.68,
+    "Stroke": 0.5,
+    "Asthma": 0.9,
+    "Chikungunya": 0.88,
+    "Acute Diarrheal Disease": 0.98,
+}
+
+SEVERE_DISEASES = {"Pneumonia", "Heart Disease", "Dengue", "Stroke"}
+COMMON_MILD_DISEASES = {"Common Cold", "Influenza", "Allergic Rhinitis"}
+SEVERE_SUPPORT_TERMS = {
+    "Pneumonia": {"shortness of breath", "breathing difficulty", "low oxygen", "spo2", "chest congestion", "sputum"},
+    "Heart Disease": {"chest pain", "palpitations", "chest tightness", "swelling", "breathless", "edema"},
+    "Dengue": {"rash", "joint pain", "retro orbital pain", "platelet", "body ache", "muscle pain"},
+    "Stroke": {"slurred speech", "facial droop", "face droop", "arm weakness", "vision loss", "sudden dizziness"},
 }
 
 
@@ -266,6 +386,8 @@ class HeuristicPredictor:
 
 @lru_cache(maxsize=1)
 def _load_artifact(task: str) -> dict | None:
+    if joblib is None:
+        return None
     model_path = MODEL_PATHS[task]
     if not Path(model_path).exists():
         return None
@@ -301,6 +423,8 @@ def _analyze_text(text: str, task: str) -> Dict[str, object]:
         combined_probabilities = _blend_probabilities(
             model_probabilities,
             heuristic_probabilities,
+            raw_text=text,
+            entities=entities,
             task=task,
         )
         ranked_probabilities = sorted(
@@ -344,6 +468,8 @@ def _normalize_scores(scores: Dict[str, float]) -> Dict[str, float]:
 def _blend_probabilities(
     model_probabilities: Dict[str, float],
     heuristic_probabilities: Dict[str, float],
+    raw_text: str,
+    entities: Dict[str, List[str]],
     task: str,
 ) -> Dict[str, float]:
     labels = sorted(set(model_probabilities) | set(heuristic_probabilities))
@@ -355,10 +481,44 @@ def _blend_probabilities(
         heuristic_score = heuristic_probabilities.get(label, 0.0)
         blended[label] = (model_weight * model_score) + (heuristic_weight * heuristic_score)
 
+    if task == "symptom":
+        blended = _apply_symptom_safety_bias(blended, raw_text=raw_text, entities=entities)
+
     total = sum(blended.values())
     if total <= 0:
         return {label: 1 / len(labels) for label in labels}
     return {label: score / total for label, score in blended.items()}
+
+
+def _apply_symptom_safety_bias(
+    probabilities: Dict[str, float],
+    raw_text: str,
+    entities: Dict[str, List[str]],
+) -> Dict[str, float]:
+    lowered = raw_text.lower()
+    token_count = len(preprocess_text(raw_text).split())
+    symptom_count = len(entities.get("symptoms") or [])
+    red_flag_present = any(term in lowered for term in RED_FLAG_TERMS)
+    is_ambiguous = token_count <= 4 or symptom_count <= 1
+
+    adjusted = {}
+    for label, score in probabilities.items():
+        adjusted_score = score * SYMPTOM_SAFETY_PRIORS.get(label, 1.0)
+        support_terms = SEVERE_SUPPORT_TERMS.get(label, set())
+        support_hits = sum(1 for term in support_terms if term in lowered)
+
+        if label in SEVERE_DISEASES and not red_flag_present:
+            if support_hits == 0:
+                adjusted_score *= 0.45 if is_ambiguous else 0.7
+            elif support_hits == 1 and is_ambiguous:
+                adjusted_score *= 0.8
+
+        if label in COMMON_MILD_DISEASES and is_ambiguous and not red_flag_present:
+            adjusted_score *= 1.18
+
+        adjusted[label] = adjusted_score
+
+    return adjusted
 
 
 def _build_explanation(prediction: str, confidence: float, entities: Dict[str, List[str]]) -> str:

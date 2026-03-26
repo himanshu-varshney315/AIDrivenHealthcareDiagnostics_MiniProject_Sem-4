@@ -38,6 +38,26 @@ text,label
 "iron profile shows severe anemia, hemoglobin 8.2, pallor, fatigue and low ferritin",Anemia
 "complete blood count reveals hb 9.0, low hematocrit, weakness and nutritional anemia",Anemia
 "patient reports fatigue, dizziness, breathlessness and laboratory evidence of anemia",Anemia
+"spirometry suggests reversible airway obstruction, wheeze, chest tightness and asthma exacerbation",Asthma
+"clinical note records wheezing, night cough, shortness of breath and bronchodilator use",Asthma
+"patient has asthma with chest tightness, inhaler use and recurrent wheeze",Asthma
+"assessment notes expiratory wheeze, reduced peak flow and acute asthma symptoms",Asthma
+"er summary shows wheezing, cough, chest tightness and response to nebulizer",Asthma
+"ct brain advised after sudden facial droop, slurred speech and right arm weakness",Stroke
+"emergency note records sudden one sided weakness, speech difficulty and suspected stroke",Stroke
+"patient presents with facial droop, arm weakness, vision change and acute stroke evaluation",Stroke
+"brain scan follow up for ischemic stroke with slurred speech and unilateral weakness",Stroke
+"admission summary mentions sudden loss of speech, limb weakness and probable stroke",Stroke
+"report shows high fever, severe joint pain, rash and chikungunya infection suspected",Chikungunya
+"patient has fever with disabling joint pain, rash and mosquito exposure, likely chikungunya",Chikungunya
+"clinical summary records fever, arthralgia, body pain and chikungunya test advised",Chikungunya
+"medical note mentions persistent fever, swollen joints and chikungunya impression",Chikungunya
+"assessment notes acute fever, rash and severe polyarthralgia due to chikungunya",Chikungunya
+"patient has acute diarrhea, vomiting, dehydration and oral rehydration advised",Acute Diarrheal Disease
+"clinical report notes watery stool, dehydration, weakness and diarrheal disease",Acute Diarrheal Disease
+"hospital summary records loose motions, vomiting, dry mouth and acute gastroenteric fluid loss",Acute Diarrheal Disease
+"assessment shows diarrhoea with lethargy, reduced urine output and dehydration",Acute Diarrheal Disease
+"report includes acute watery diarrhea, abdominal cramps and rehydration treatment",Acute Diarrheal Disease
 "microcytic anemia suspected with low hemoglobin, low rbc count and chronic weakness",Anemia
 "chest pain, elevated cholesterol, ecg changes, coronary artery disease and heart disease suspected",Heart Disease
 "patient reports exertional chest discomfort, high troponin, shortness of breath, cardiac evaluation",Heart Disease

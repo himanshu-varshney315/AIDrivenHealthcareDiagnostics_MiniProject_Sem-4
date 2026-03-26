@@ -4,6 +4,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import VotingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -46,6 +47,23 @@ SYMPTOM_REPLACEMENTS = {
     "fatigue": ["tiredness"],
 }
 
+SYMPTOM_PREFIXES = [
+    "",
+    "since yesterday, ",
+    "since this morning, ",
+    "for one day, ",
+    "mildly, ",
+    "i think ",
+]
+
+SYMPTOM_SUFFIXES = [
+    "",
+    " since yesterday",
+    " from today",
+    " and it is mild",
+    " and i want basic advice",
+]
+
 
 def train_models(dataset_path: str | None = None, task: str = "report") -> TrainingResult:
     dataframe = load_dataset(dataset_path, task=task)
@@ -65,6 +83,7 @@ def train_models(dataset_path: str | None = None, task: str = "report") -> Train
                     min_df=1,
                     sublinear_tf=True,
                     strip_accents="unicode",
+                    lowercase=True,
                 ),
             ),
             (
@@ -75,10 +94,32 @@ def train_models(dataset_path: str | None = None, task: str = "report") -> Train
                     min_df=1,
                     sublinear_tf=True,
                     strip_accents="unicode",
+                    lowercase=True,
                 ),
             ),
         ]
     )
+
+    soft_voting_estimators = [
+        (
+            "lr",
+            LogisticRegression(
+                max_iter=4000,
+                C=2.5,
+                class_weight="balanced",
+            ),
+        ),
+        ("nb", ComplementNB(alpha=0.5)),
+        (
+            "rf",
+            RandomForestClassifier(
+                n_estimators=500,
+                min_samples_leaf=1,
+                random_state=42,
+                class_weight="balanced_subsample",
+            ),
+        ),
+    ]
 
     candidate_models = {
         "logistic_regression_hybrid": Pipeline(
@@ -110,6 +151,18 @@ def train_models(dataset_path: str | None = None, task: str = "report") -> Train
                         min_samples_leaf=1,
                         random_state=42,
                         class_weight="balanced_subsample",
+                    ),
+                ),
+            ]
+        ),
+        "soft_voting_ensemble": Pipeline(
+            [
+                ("features", feature_stack),
+                (
+                    "classifier",
+                    VotingClassifier(
+                        estimators=soft_voting_estimators,
+                        voting="soft",
                     ),
                 ),
             ]
@@ -203,6 +256,30 @@ def _augment_symptom_dataset(dataframe: pd.DataFrame) -> pd.DataFrame:
             if source in text:
                 for replacement in replacements[:2]:
                     variants.add(text.replace(source, replacement))
+
+        normalized = text.strip()
+        stripped = normalized
+        if stripped.startswith("i have "):
+            stripped = stripped[len("i have ") :]
+        elif stripped.startswith("i feel "):
+            stripped = stripped[len("i feel ") :]
+        elif stripped.startswith("my "):
+            stripped = stripped[len("my ") :]
+
+        for prefix in SYMPTOM_PREFIXES:
+            variants.add(f"{prefix}{normalized}".strip(", "))
+            variants.add(f"{prefix}{stripped}".strip(", "))
+
+        for suffix in SYMPTOM_SUFFIXES:
+            variants.add(f"{normalized}{suffix}".strip())
+            variants.add(f"{stripped}{suffix}".strip())
+
+        if "," in normalized:
+            variants.add(normalized.replace(",", " and"))
+        if " and " in normalized:
+            first_chunk = normalized.split(" and ")[0].strip()
+            if len(first_chunk.split()) >= 2:
+                variants.add(first_chunk)
 
         for variant in variants:
             augmented_rows.append({"text": variant, "label": label})
