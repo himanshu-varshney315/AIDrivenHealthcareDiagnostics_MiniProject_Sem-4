@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'config/app_identity.dart';
+import 'screens/admin_overview_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -10,7 +12,9 @@ import 'screens/profile_screen.dart';
 import 'screens/find_clinics_screen.dart';
 import 'screens/system_log_screen.dart';
 import 'screens/upload_report_screen.dart';
+import 'services/auth_controller.dart';
 import 'theme/app_theme.dart';
+import 'widgets/route_guards.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,7 +26,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Healthcare App',
+      navigatorKey: AuthController.navigatorKey,
+      title: AppIdentity.appName,
       debugShowCheckedModeBanner: false,
 
       // First screen when app starts
@@ -30,16 +35,24 @@ class MyApp extends StatelessWidget {
 
       // App routes
       routes: {
-        '/': (context) => SplashScreen(),
-        '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignupScreen(),
-        '/dashboard': (context) => DashboardScreen(),
-        '/clinics': (context) => const ClinicsScreen(),
-        '/health-ai': (context) => const HealthAiScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/find-clinics': (context) => const FindClinicsScreen(),
-        '/system-log': (context) => const SystemLogScreen(),
-        '/reports': (context) => const ReportScreen(),
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const PublicOnlyRoute(child: LoginScreen()),
+        '/signup': (context) => const PublicOnlyRoute(child: SignupScreen()),
+        '/dashboard': (context) =>
+            const ProtectedRoute(child: DashboardScreen()),
+        '/clinics': (context) => const ProtectedRoute(child: ClinicsScreen()),
+        '/health-ai': (context) =>
+            const ProtectedRoute(child: HealthAiScreen()),
+        '/profile': (context) => const ProtectedRoute(child: ProfileScreen()),
+        '/find-clinics': (context) =>
+            const ProtectedRoute(child: FindClinicsScreen()),
+        '/system-log': (context) =>
+            const ProtectedRoute(child: SystemLogScreen()),
+        '/reports': (context) => const ProtectedRoute(child: ReportScreen()),
+        '/admin-overview': (context) => const ProtectedRoute(
+          requiredRole: 'admin',
+          child: AdminOverviewScreen(),
+        ),
       },
 
       theme: AppTheme.light,

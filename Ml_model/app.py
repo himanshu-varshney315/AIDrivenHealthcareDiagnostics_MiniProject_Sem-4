@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 
 from Ml_model.predict import analyze_medical_report_text, analyze_symptom_text
-from Ml_model.utils.pdf_extractor import extract_text_from_pdf_bytes, ocr_is_available
+from Ml_model.utils.pdf_extractor import extract_text_from_file_bytes, ocr_is_available
 
 
 app = Flask(__name__)
@@ -15,14 +15,18 @@ def analyze_report() -> tuple:
     uploaded_file = request.files["file"]
     if not uploaded_file.filename:
         return jsonify({"message": "Empty file name"}), 400
-    if not uploaded_file.filename.lower().endswith(".pdf"):
-        return jsonify({"message": "Only PDF files are supported"}), 400
+    supported_extensions = (".pdf", ".txt", ".png", ".jpg", ".jpeg")
+    if not uploaded_file.filename.lower().endswith(supported_extensions):
+        return jsonify({"message": "Only PDF, TXT, PNG, JPG, and JPEG files are supported"}), 400
 
-    extracted_text = extract_text_from_pdf_bytes(uploaded_file.read())
+    extracted_text = extract_text_from_file_bytes(
+        uploaded_file.read(),
+        filename=uploaded_file.filename,
+    )
     if not extracted_text:
-        message = "Could not extract text from PDF"
+        message = "Could not extract text from report"
         if not ocr_is_available():
-            message += ". This PDF appears scanned or image-based. Install Tesseract OCR and pytesseract for OCR support."
+            message += ". Image and scanned report support requires Tesseract OCR and pytesseract."
         return jsonify({"message": message}), 400
 
     result = analyze_medical_report_text(extracted_text)

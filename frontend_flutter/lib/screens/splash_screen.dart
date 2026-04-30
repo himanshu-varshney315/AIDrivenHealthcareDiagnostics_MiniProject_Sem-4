@@ -3,7 +3,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../config/app_identity.dart';
+import '../services/auth_controller.dart';
 import '../theme/app_theme.dart';
+import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
 const List<_SplashSlide> _slides = [
@@ -46,6 +49,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<Offset> _sceneSlide;
   Timer? _slideTimer;
   int _currentSlide = 0;
+  bool _hasActiveSession = false;
 
   @override
   void initState() {
@@ -79,7 +83,16 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         );
 
+    _restoreSessionState();
     _scheduleNextSlide();
+  }
+
+  Future<void> _restoreSessionState() async {
+    final session = await AuthController.loadSession();
+    if (!mounted) return;
+    setState(
+      () => _hasActiveSession = AuthController.hasActiveSession(session),
+    );
   }
 
   void _scheduleNextSlide() {
@@ -91,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (_currentSlide >= _slides.length - 1) {
-      _navigateToLogin();
+      _navigateNext();
       return;
     }
 
@@ -105,15 +118,20 @@ class _SplashScreenState extends State<SplashScreen>
     _scheduleNextSlide();
   }
 
-  void _navigateToLogin() {
+  void _navigateNext() {
     if (!mounted) return;
     _slideTimer?.cancel();
+    final Widget target = _hasActiveSession
+        ? const DashboardScreen()
+        : const LoginScreen();
+    final RouteSettings settings = RouteSettings(
+      name: _hasActiveSession ? '/dashboard' : '/login',
+    );
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        settings: const RouteSettings(name: '/login'),
+        settings: settings,
         transitionDuration: _transitionDuration,
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => target,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curved = CurvedAnimation(
             parent: animation,
@@ -181,6 +199,8 @@ class _SplashScreenState extends State<SplashScreen>
                       drift: _floatController.value,
                       currentSlide: _currentSlide,
                       pageController: _pageController,
+                      hasActiveSession: _hasActiveSession,
+                      onSkip: _navigateNext,
                     ),
                   ),
                 ),
@@ -255,7 +275,7 @@ class _BrandIntro extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Health AI',
+                AppIdentity.appName,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: 50,
                   letterSpacing: -1.6,
@@ -264,7 +284,7 @@ class _BrandIntro extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Calm health insights, thoughtfully designed.',
+                AppIdentity.appTagline,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: AppTheme.textMuted,
@@ -283,11 +303,15 @@ class _OnboardingScene extends StatelessWidget {
   final double drift;
   final int currentSlide;
   final PageController pageController;
+  final bool hasActiveSession;
+  final VoidCallback onSkip;
 
   const _OnboardingScene({
     required this.drift,
     required this.currentSlide,
     required this.pageController,
+    required this.hasActiveSession,
+    required this.onSkip,
   });
 
   @override
@@ -312,13 +336,19 @@ class _OnboardingScene extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _TopBar(currentSlide: currentSlide),
+                _TopBar(
+                  currentSlide: currentSlide,
+                  hasActiveSession: hasActiveSession,
+                  onTap: onSkip,
+                ),
                 SizedBox(height: shortScreen ? 10 : (compact ? 18 : 22)),
                 Expanded(
                   child: Column(
                     children: [
                       SizedBox(
-                        height: illustrationHeight.clamp(168, 300),
+                        height: illustrationHeight
+                            .clamp(168.0, 300.0)
+                            .toDouble(),
                         width: width,
                         child: _IllustrationStage(drift: drift),
                       ),
@@ -351,8 +381,14 @@ class _OnboardingScene extends StatelessWidget {
 
 class _TopBar extends StatelessWidget {
   final int currentSlide;
+  final bool hasActiveSession;
+  final VoidCallback onTap;
 
-  const _TopBar({required this.currentSlide});
+  const _TopBar({
+    required this.currentSlide,
+    required this.hasActiveSession,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -378,17 +414,21 @@ class _TopBar extends StatelessWidget {
           }),
         ),
         const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF2FF),
+        Material(
+          color: const Color(0xFFEAF2FF),
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            'Login',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.blue,
-              fontWeight: FontWeight.w700,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              child: Text(
+                hasActiveSession ? 'Resume' : 'Login',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.blue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ),

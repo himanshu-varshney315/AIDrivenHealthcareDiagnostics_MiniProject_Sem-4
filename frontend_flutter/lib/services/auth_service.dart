@@ -14,6 +14,12 @@ class AuthSession {
     required this.token,
     required this.role,
   });
+
+  bool get isAuthenticated =>
+      userEmail.trim().isNotEmpty && token.trim().isNotEmpty;
+
+  bool hasRole(String value) =>
+      role.trim().toLowerCase() == value.trim().toLowerCase();
 }
 
 class AuthService {

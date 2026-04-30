@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_controller.dart';
+import 'auth_exceptions.dart';
 import 'auth_service.dart';
 
 class ApiService {
@@ -99,6 +101,12 @@ class ApiService {
       var response = await request.send().timeout(_requestTimeout);
       var responseData = await response.stream.bytesToString();
 
+      _throwForProtectedStatus(
+        response.statusCode,
+        responseData,
+        fromRoute: '/reports',
+      );
+
       if (response.statusCode >= 400) {
         String message = "Request failed";
         try {
@@ -136,6 +144,11 @@ class ApiService {
           )
           .timeout(_requestTimeout);
 
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/health-ai',
+      );
       return _decodeResponse(response);
     } on SocketException {
       return _networkError("Cannot reach backend at $baseUrl");
@@ -158,6 +171,11 @@ class ApiService {
           )
           .timeout(_requestTimeout);
 
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/dashboard',
+      );
       return _decodeResponse(response);
     } on SocketException {
       return _networkError("Cannot reach backend at $baseUrl");
@@ -166,6 +184,34 @@ class ApiService {
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAdminOverview({int limit = 10}) async {
+    try {
+      final headers = await _authorizedHeaders();
+      final response = await http
+          .get(
+            Uri.parse("$baseUrl/reports/overview?limit=$limit"),
+            headers: headers,
+          )
+          .timeout(_requestTimeout);
+
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/admin-overview',
+      );
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError("Cannot reach backend at $baseUrl");
+    } on TimeoutException {
+      return _networkError("Request timed out. Backend may be down.");
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      if (e is AuthException) rethrow;
       return _networkError("Unexpected error: $e");
     }
   }
@@ -194,8 +240,38 @@ class ApiService {
     final session = await AuthService().loadSession();
     final token = session?.token.trim() ?? '';
     if (token.isEmpty) {
-      return {};
+      throw const UnauthorizedException();
     }
     return {"Authorization": "Bearer $token"};
+  }
+
+  void _throwForProtectedStatus(
+    int statusCode,
+    String body, {
+    required String fromRoute,
+  }) {
+    if (statusCode == 401) {
+      unawaited(AuthController.handleUnauthorized(fromRoute: fromRoute));
+      throw UnauthorizedException(
+        _extractMessage(body, 'Authentication required.'),
+      );
+    }
+    if (statusCode == 403) {
+      throw ForbiddenException(
+        _extractMessage(
+          body,
+          'You do not have permission to access this resource.',
+        ),
+      );
+    }
+  }
+
+  String _extractMessage(String body, String fallback) {
+    try {
+      final parsed = jsonDecode(body) as Map<String, dynamic>;
+      return parsed['message']?.toString() ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
   }
 }

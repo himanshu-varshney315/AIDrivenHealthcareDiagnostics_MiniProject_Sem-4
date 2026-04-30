@@ -1,6 +1,6 @@
 # AI-Driven Healthcare Diagnostics
 
-This project combines a Flutter frontend, a Flask backend, and an ML-assisted analysis service for medical report review and symptom-based health guidance. Users can sign up, log in, upload PDF reports, analyze typed symptoms, and review trends from recent analyses.
+This project combines a Flutter frontend, a Flask backend, and an ML-assisted analysis service for medical report review and symptom-based health guidance. Users can sign up, log in, upload PDF/TXT/image reports, analyze typed symptoms, receive in-app status notifications, and review trends from recent analyses.
 
 ## What Improved From Feedback
 
@@ -31,7 +31,9 @@ Additional docs:
 
 - User signup and login with password hashing and JWT auth
 - PDF medical report upload and text extraction
+- TXT and image report upload with OCR support when Tesseract is available
 - Symptom text analysis
+- In-app notification timeline for analysis status and high-urgency alerts
 - Trend summaries from recent analyses
 - Explainable result cards with confidence and probability views
 - Role-aware backend claims with admin-only overview access
@@ -58,19 +60,19 @@ Typical request flow:
 
 ## Run Locally
 
-Open three terminals if you want the full stack.
+Open three terminals if you want the full stack. All commands below can be run from the project root.
 
 ### 1. Install dependencies
 
 ```powershell
-pip install -r backend/requirements.txt
-pip install -r Ml_model/requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r Ml_model/requirements.txt
 ```
 
 ### 2. Start the ML analysis service
 
 ```powershell
-python -m Ml_model.app
+.\.venv\Scripts\python.exe -m Ml_model.app
 ```
 
 The ML API runs on `http://127.0.0.1:5001`.
@@ -78,8 +80,7 @@ The ML API runs on `http://127.0.0.1:5001`.
 ### 3. Start the backend API
 
 ```powershell
-cd backend
-python app.py
+.\.venv\Scripts\python.exe backend/app.py
 ```
 
 The backend runs on `http://127.0.0.1:5000`.
@@ -107,7 +108,7 @@ flutter run --dart-define=API_BASE_URL=http://127.0.0.1:5000
 
 - JWT secrets should come from environment variables in production
 - For local development, the backend generates and reuses `instance/.jwt_secret`
-- The iOS map key uses `$(GOOGLE_MAPS_API_KEY)` indirection, so the repo does not store a real API secret
+- The mobile map key uses `MAPS_RUNTIME_KEY` build-time indirection, so the repo does not store a real API key value
 - Auth routes and analysis routes use rate limiting
 - User input is normalized and validated before processing
 
@@ -128,8 +129,7 @@ For request/response expectations and backend internals, see `backend/README.md`
 Backend tests:
 
 ```powershell
-cd backend
-python -m unittest discover -s tests
+.\.venv\Scripts\python.exe -m unittest discover -s backend/tests
 ```
 
 Flutter checks:
@@ -143,9 +143,10 @@ flutter test
 ## Notes
 
 - The ML service can fall back to heuristic analysis when optional model artifacts or some ML packages are missing
-- Report upload currently supports PDF input
+- Report upload supports PDF, TXT, PNG, JPG, and JPEG input; image/scanned extraction requires local OCR support
 - The admin overview endpoint is ready for future dashboard/admin UI expansion
 - Local development uses SQLite for simplicity
+- Backend runtime data now lives consistently under `backend/instance/`
 
 ## Contributors
 

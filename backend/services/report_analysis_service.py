@@ -1,6 +1,7 @@
 import json
 import uuid
 from urllib import error, request as urllib_request
+from werkzeug.utils import secure_filename
 
 from database.db import db
 from models.report_analysis_model import ReportAnalysis
@@ -10,38 +11,41 @@ from models.user_model import User
 ML_API_URL = "http://127.0.0.1:5001/analyze-report"
 ML_SYMPTOM_API_URL = "http://127.0.0.1:5001/analyze-symptoms"
 MAX_REPORT_BYTES = 10 * 1024 * 1024
+SUPPORTED_REPORT_EXTENSIONS = {"pdf", "txt", "png", "jpg", "jpeg"}
 
 
-def validate_uploaded_pdf(uploaded_file):
+def validate_uploaded_report(uploaded_file):
     if uploaded_file is None:
         return "No file uploaded", None
     if uploaded_file.filename == "":
         return "Empty file name", None
-    if not uploaded_file.filename.lower().endswith(".pdf"):
-        return "Only PDF files are supported", None
+    extension = uploaded_file.filename.rsplit(".", 1)[-1].lower()
+    if "." not in uploaded_file.filename or extension not in SUPPORTED_REPORT_EXTENSIONS:
+        return "Only PDF, TXT, PNG, JPG, and JPEG files are supported", None
 
     file_bytes = uploaded_file.read()
     if not file_bytes:
-        return "Uploaded PDF is empty", None
+        return "Uploaded report is empty", None
     if len(file_bytes) > MAX_REPORT_BYTES:
-        return "Uploaded PDF exceeds the 10 MB limit", None
+        return "Uploaded report exceeds the 10 MB limit", None
     return None, file_bytes
 
 
 def analyze_uploaded_report(user_id, uploaded_file):
-    validation_error, file_bytes = validate_uploaded_pdf(uploaded_file)
+    validation_error, file_bytes = validate_uploaded_report(uploaded_file)
     if validation_error:
         return None, validation_error, 400
 
+    safe_filename = secure_filename(uploaded_file.filename)
     result = forward_report_to_ml_api(
         file_bytes=file_bytes,
-        filename=uploaded_file.filename,
+        filename=safe_filename,
         content_type=uploaded_file.mimetype or "application/pdf",
     )
     save_analysis_record(
         user_id=user_id,
         source_type="report",
-        source_name=uploaded_file.filename,
+        source_name=safe_filename,
         analysis_result=result,
     )
     result["uploaded_by"] = str(user_id)

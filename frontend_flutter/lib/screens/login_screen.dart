@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_identity.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
@@ -18,6 +19,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   bool isLoading = false;
   bool _isPasswordVisible = false;
+  String? _statusMessage;
+  bool _routeMessageLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeMessageLoaded) return;
+    _routeMessageLoaded = true;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final authMessage = args?['authMessage']?.toString().trim();
+    if (authMessage?.isNotEmpty == true) {
+      setState(() => _statusMessage = authMessage);
+    }
+  }
 
   @override
   void dispose() {
@@ -29,7 +45,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      _statusMessage = 'Checking your credentials...';
+    });
 
     try {
       final apiService = ApiService();
@@ -43,6 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response != null &&
           (response['token'] != null || response['status'] == 'success')) {
+        setState(
+          () => _statusMessage = 'Login successful. Opening dashboard...',
+        );
         final String userName =
             (response['user']?['name'] as String?)?.trim().isNotEmpty == true
             ? (response['user']['name'] as String).trim()
@@ -72,6 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
           arguments: {'userName': userName, 'userEmail': userEmail},
         );
       } else {
+        setState(() {
+          _statusMessage = response?['message'] ?? 'Invalid credentials';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response?['message'] ?? 'Invalid credentials'),
@@ -80,7 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        _statusMessage = 'Connection error. Please check the backend service.';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Connection error: ${e.toString()}')),
       );
@@ -90,7 +118,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      showHero: false,
+      icon: Icons.health_and_safety_rounded,
+      eyebrow: AppIdentity.appName,
+      title: 'Welcome back to your care timeline',
+      subtitle: AppIdentity.appShortDescription,
+      stats: const [
+        AuthStat(label: 'AI review', value: '24/7', tint: AppTheme.blue),
+        AuthStat(label: 'Privacy', value: 'JWT', tint: AppTheme.aqua),
+      ],
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -107,14 +142,14 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome back',
+              'Sign in',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontSize: 30),
             ),
             const SizedBox(height: 8),
             Text(
-              'Sign in to continue to your dashboard.',
+              'Continue to reports, symptom guidance, and nearby care.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
@@ -160,8 +195,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
               validator: (value) {
-                if (value == null || value.length < 6) {
-                  return 'Password too short';
+                if (value == null || value.length < 8) {
+                  return 'Password must be at least 8 characters';
                 }
                 return null;
               },
@@ -175,6 +210,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            if (_statusMessage != null) ...[
+              _AuthStatusBanner(message: _statusMessage!),
+              const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -192,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Sign In'),
+                    : const Text('Sign in'),
               ),
             ),
             const SizedBox(height: 14),
@@ -200,19 +239,19 @@ class _LoginScreenState extends State<LoginScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.sand,
-                borderRadius: BorderRadius.circular(18),
+                color: AppTheme.softSurface,
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.shield_moon_outlined, color: AppTheme.coral),
+                  const Icon(Icons.shield_moon_outlined, color: AppTheme.blue),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Your session is stored locally after login so your dashboard and profile stay synced.',
+                      'Your session is stored locally after login so your dashboard and profile stay in sync.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -234,6 +273,39 @@ class _LoginScreenState extends State<LoginScreen> {
       labelText: label,
       hintText: hint,
       prefixIcon: Icon(icon),
+    );
+  }
+}
+
+class _AuthStatusBanner extends StatelessWidget {
+  final String message;
+
+  const _AuthStatusBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF3FF),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: AppTheme.blue),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppTheme.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

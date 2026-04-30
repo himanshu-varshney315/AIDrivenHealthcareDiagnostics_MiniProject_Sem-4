@@ -6,7 +6,7 @@ This backend is a Flask API for authentication, medical report analysis requests
 
 - Register and authenticate users
 - Issue JWT access tokens
-- Accept PDF uploads and typed symptom input
+- Accept PDF, TXT, PNG, JPG/JPEG uploads and typed symptom input
 - Forward analysis work to the ML service
 - Persist analysis history in SQLite
 - Build trend summaries from recent analyses
@@ -49,9 +49,8 @@ It exposes `create_app()` so the API can be used both in local runtime and in te
 From the project root:
 
 ```powershell
-pip install -r backend/requirements.txt
-cd backend
-python app.py
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe backend/app.py
 ```
 
 Default backend URL:
@@ -63,15 +62,17 @@ http://127.0.0.1:5000
 The ML service must also be running:
 
 ```powershell
-python -m Ml_model.app
+.\.venv\Scripts\python.exe -m Ml_model.app
 ```
+
+You can still launch from inside `backend` with `python app.py` if you prefer.
 
 ## Configuration
 
 Environment variables supported by the backend:
 
 - `JWT_SECRET_KEY`
-  Required in production. If missing in local development, a secret is generated and stored in `instance/.jwt_secret`.
+  Required in production. If missing in local development, a secret is generated and stored in `backend/instance/.jwt_secret`.
 - `MAX_UPLOAD_BYTES`
   Maximum allowed upload size. Default is `10485760` bytes (10 MB).
 - `CORS_ORIGINS`
@@ -185,7 +186,7 @@ Requires `Authorization: Bearer <token>`.
 
 Consumes multipart form-data:
 
-- `file`: PDF report
+- `file`: PDF, TXT, PNG, JPG, or JPEG report
 
 The backend validates the file, forwards it to the ML service, stores the result, and returns analysis data plus trend context.
 
@@ -263,9 +264,9 @@ Current limitations:
 
 ### Report upload flow
 
-1. Client sends PDF to `/upload-report`.
-2. Backend validates file presence, extension, and size.
-3. Backend forwards the PDF to `http://127.0.0.1:5001/analyze-report`.
+1. Client sends a supported report file to `/upload-report`.
+2. Backend validates file presence, extension, sanitized filename, and size.
+3. Backend forwards the report to `http://127.0.0.1:5001/analyze-report`.
 4. Backend stores the returned analysis in `ReportAnalysis`.
 5. Backend builds a trend summary from recent history.
 6. Backend returns the combined result to the client.
@@ -283,8 +284,7 @@ Current limitations:
 Run backend tests:
 
 ```powershell
-cd backend
-python -m unittest discover -s tests
+.\.venv\Scripts\python.exe -m unittest discover -s backend/tests
 ```
 
 Current test coverage includes:
@@ -308,15 +308,16 @@ Fix:
 python -m Ml_model.app
 ```
 
-### Upload rejected with size error
+### Upload rejected with size or format error
 
 Cause:
 
 - file exceeds `MAX_UPLOAD_BYTES`
+- file extension is not PDF, TXT, PNG, JPG, or JPEG
 
 Fix:
 
-- use a smaller PDF
+- use a smaller supported report file
 - or raise `MAX_UPLOAD_BYTES` in the environment
 
 ### Login fails for a valid user
@@ -326,6 +327,18 @@ Check:
 - email format
 - password correctness
 - whether you are using the same SQLite database file as the running app
+
+### Tests fail with `ModuleNotFoundError: No module named 'app'`
+
+Cause:
+
+- tests were started from the project root with a path-sensitive command in an older setup
+
+Fix:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s backend/tests
+```
 
 ## Future Documentation Candidates
 

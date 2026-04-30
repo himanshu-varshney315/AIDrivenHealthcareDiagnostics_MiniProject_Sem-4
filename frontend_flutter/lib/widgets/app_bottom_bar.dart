@@ -18,18 +18,18 @@ class AppBottomBar extends StatefulWidget {
 class _AppBottomBarState extends State<AppBottomBar> {
   String? _profileImagePath;
 
+  static const _items = [
+    _NavItem('Dashboard', 'Home', Icons.home_rounded, '/dashboard'),
+    _NavItem('Health AI', 'AI', Icons.auto_awesome_rounded, '/health-ai'),
+    _NavItem('Reports', 'Reports', Icons.description_rounded, '/reports'),
+    _NavItem('Clinics', 'Care', Icons.location_on_rounded, '/clinics'),
+    _NavItem('My Profile', 'Profile', Icons.person_rounded, '/profile'),
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadProfileImage();
-  }
-
-  @override
-  void didUpdateWidget(covariant AppBottomBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedItem != widget.selectedItem) {
-      _loadProfileImage();
-    }
   }
 
   Future<void> _loadProfileImage() async {
@@ -44,131 +44,65 @@ class _AppBottomBarState extends State<AppBottomBar> {
         : legacyImage;
 
     if (!mounted) return;
-    setState(() {
-      _profileImagePath = nextImage;
-    });
+    setState(() => _profileImagePath = nextImage);
   }
 
-  void _onTap(String label) {
-    if (label == widget.selectedItem) {
-      return;
-    }
-
-    if (label == 'Analytics') {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Analytics is coming soon')));
-      return;
-    }
-
-    final route = switch (label) {
-      'Dashboard' => '/dashboard',
-      'Health AI' => '/health-ai',
-      'Clinics' => '/clinics',
-      'My Profile' => '/profile',
-      _ => null,
-    };
-
-    if (route == null) return;
-    Navigator.pushReplacementNamed(context, route);
+  void _go(_NavItem item) {
+    if (item.label == widget.selectedItem) return;
+    Navigator.pushReplacementNamed(context, item.route);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.95)),
+        color: Colors.white.withValues(alpha: 0.98),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppTheme.borderStrong),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 28,
-            offset: Offset(0, -4),
+            color: Color(0x1410222D),
+            blurRadius: 26,
+            offset: Offset(0, 14),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Row(
-          children: [
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Dashboard',
-                displayLabel: 'Home',
-                icon: Icons.home_outlined,
-                selected: widget.selectedItem == 'Dashboard',
-                onTap: () => _onTap('Dashboard'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Health AI',
-                displayLabel: 'Assistant',
-                icon: Icons.android_rounded,
-                customIcon: const _HealthAiNavIcon(),
-                accentColor: AppTheme.blue,
-                selected: widget.selectedItem == 'Health AI',
-                onTap: () => _onTap('Health AI'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Analytics',
-                displayLabel: 'Analytics',
-                icon: Icons.query_stats_rounded,
-                accentColor: const Color(0xFF188A7A),
-                selected: widget.selectedItem == 'Analytics',
-                onTap: () => _onTap('Analytics'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'Clinics',
-                displayLabel: 'Clinics',
-                icon: Icons.add_location_alt_outlined,
-                selected: widget.selectedItem == 'Clinics',
-                onTap: () => _onTap('Clinics'),
-              ),
-            ),
-            Expanded(
-              child: _BottomBarItem(
-                label: 'My Profile',
-                displayLabel: 'Profile',
-                icon: Icons.person_outline_rounded,
-                profileImagePath: _profileImagePath,
-                selected: widget.selectedItem == 'My Profile',
-                onTap: () => _onTap('My Profile'),
-              ),
-            ),
-          ],
+          children: _items
+              .map(
+                (item) => Expanded(
+                  child: _BottomItem(
+                    item: item,
+                    selected: item.label == widget.selectedItem,
+                    profileImagePath: item.label == 'My Profile'
+                        ? _profileImagePath
+                        : null,
+                    onTap: () => _go(item),
+                  ),
+                ),
+              )
+              .toList(),
         ),
       ),
     );
   }
 }
 
-class _BottomBarItem extends StatelessWidget {
-  final String label;
-  final String? displayLabel;
-  final IconData icon;
+class _BottomItem extends StatelessWidget {
+  final _NavItem item;
   final bool selected;
   final String? profileImagePath;
-  final Widget? customIcon;
-  final Color accentColor;
   final VoidCallback onTap;
 
-  const _BottomBarItem({
-    required this.label,
-    required this.icon,
+  const _BottomItem({
+    required this.item,
+    required this.selected,
+    required this.profileImagePath,
     required this.onTap,
-    this.displayLabel,
-    this.selected = false,
-    this.profileImagePath,
-    this.customIcon,
-    this.accentColor = const Color(0xFF646A76),
   });
 
   @override
@@ -178,70 +112,37 @@ class _BottomBarItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF0F6FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
+          color: selected ? AppTheme.scrub : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 2),
             if (hasProfileImage)
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  gradient: selected
-                      ? const LinearGradient(
-                          colors: [AppTheme.blue, AppTheme.aqua],
-                        )
-                      : null,
-                  color: selected ? null : const Color(0xFFE8EDF6),
-                  shape: BoxShape.circle,
-                ),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundImage: FileImage(File(profileImagePath!)),
-                ),
+              CircleAvatar(
+                radius: 14,
+                backgroundImage: FileImage(File(profileImagePath!)),
               )
-            else if (customIcon != null)
-              customIcon!
             else
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : const Color(0xFFF4F7FA),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: selected
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x11000000),
-                            blurRadius: 12,
-                            offset: Offset(0, 6),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  icon,
-                  color: selected ? AppTheme.navy : accentColor,
-                  size: 24,
-                ),
+              Icon(
+                item.icon,
+                size: 22,
+                color: selected ? AppTheme.clinicalGreen : AppTheme.textMuted,
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              displayLabel ?? label,
+              item.display,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
+                color: selected ? AppTheme.clinicalGreen : AppTheme.textMuted,
                 fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? AppTheme.navy : const Color(0xFF566173),
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -251,72 +152,11 @@ class _BottomBarItem extends StatelessWidget {
   }
 }
 
-class _HealthAiNavIcon extends StatelessWidget {
-  const _HealthAiNavIcon();
+class _NavItem {
+  final String label;
+  final String display;
+  final IconData icon;
+  final String route;
 
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 30,
-      height: 30,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            top: 6,
-            child: Container(
-              width: 22,
-              height: 18,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1EDFF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF7F74D8), width: 1.6),
-              ),
-            ),
-          ),
-          const Positioned(
-            top: 2,
-            child: SizedBox(
-              width: 2,
-              height: 5,
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: Color(0xFF7F74D8)),
-              ),
-            ),
-          ),
-          const Positioned(
-            top: 0,
-            child: Icon(Icons.circle, size: 4, color: Color(0xFF7F74D8)),
-          ),
-          const Positioned(
-            top: 12,
-            left: 9,
-            child: Icon(Icons.circle, size: 3.6, color: Color(0xFF7F74D8)),
-          ),
-          const Positioned(
-            top: 12,
-            right: 9,
-            child: Icon(Icons.circle, size: 3.6, color: Color(0xFF7F74D8)),
-          ),
-          Positioned(
-            top: 17,
-            child: Container(
-              width: 9,
-              height: 4.5,
-              decoration: const BoxDecoration(
-                color: Color(0xFF4EB7C5),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-              ),
-            ),
-          ),
-          const Positioned(
-            right: 1,
-            top: 4,
-            child: Icon(Icons.auto_awesome, size: 11, color: Color(0xFF4EB7C5)),
-          ),
-        ],
-      ),
-    );
-  }
+  const _NavItem(this.label, this.display, this.icon, this.route);
 }

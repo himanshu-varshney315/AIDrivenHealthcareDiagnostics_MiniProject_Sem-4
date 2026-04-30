@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent
-INSTANCE_DIR = BASE_DIR.parent / "instance"
+INSTANCE_DIR = BASE_DIR / "instance"
 LOCAL_SECRET_FILE = INSTANCE_DIR / ".jwt_secret"
 
 

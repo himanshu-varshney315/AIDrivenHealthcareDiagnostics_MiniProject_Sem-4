@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_identity.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_shell.dart';
@@ -21,6 +22,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  String? _statusMessage;
 
   @override
   void dispose() {
@@ -34,7 +36,10 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> signupUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      _statusMessage = 'Creating your account...';
+    });
 
     try {
       final apiService = ApiService();
@@ -50,18 +55,27 @@ class _SignupScreenState extends State<SignupScreen> {
       if (response != null &&
           (response['status'] == 'success' ||
               response['message'] == 'User registered successfully')) {
+        setState(
+          () => _statusMessage = 'Account created. You can sign in now.',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created! Please login.')),
         );
         Navigator.pushReplacementNamed(context, '/login');
       } else {
+        setState(
+          () => _statusMessage = response?['message'] ?? 'Signup failed',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response?['message'] ?? 'Signup failed')),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        _statusMessage = 'Connection error. Please check the backend service.';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Connection error: ${e.toString()}')),
       );
@@ -71,7 +85,14 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      showHero: false,
+      icon: Icons.add_reaction_rounded,
+      eyebrow: 'Start ${AppIdentity.appName}',
+      title: 'Create your personal care space',
+      subtitle: AppIdentity.appShortDescription,
+      stats: const [
+        AuthStat(label: 'Reports', value: '5 types', tint: AppTheme.blue),
+        AuthStat(label: 'Alerts', value: 'Live', tint: AppTheme.coral),
+      ],
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -142,7 +163,7 @@ class _SignupScreenState extends State<SignupScreen> {
               decoration:
                   _fieldDecoration(
                     label: 'Password',
-                    hint: 'Minimum 6 characters',
+                    hint: 'Minimum 8 characters',
                     icon: Icons.lock_outline_rounded,
                   ).copyWith(
                     suffixIcon: IconButton(
@@ -157,8 +178,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
               validator: (value) {
-                if (value == null || value.length < 6) {
-                  return 'Password must be 6+ chars';
+                if (value == null || value.length < 8) {
+                  return 'Password must be at least 8 characters';
                 }
                 return null;
               },
@@ -193,6 +214,10 @@ class _SignupScreenState extends State<SignupScreen> {
               },
             ),
             const SizedBox(height: 18),
+            if (_statusMessage != null) ...[
+              _AuthStatusBanner(message: _statusMessage!),
+              const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -210,7 +235,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Create Account'),
+                    : const Text('Create account'),
               ),
             ),
             const SizedBox(height: 14),
@@ -218,8 +243,8 @@ class _SignupScreenState extends State<SignupScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF7FF),
-                borderRadius: BorderRadius.circular(18),
+                color: AppTheme.softSurface,
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
@@ -227,10 +252,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'After signup you can immediately upload reports and start building comparison history in the dashboard.',
+                      'After signup you can upload reports immediately and start building a health history in the dashboard.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -252,6 +277,39 @@ class _SignupScreenState extends State<SignupScreen> {
       labelText: label,
       hintText: hint,
       prefixIcon: Icon(icon),
+    );
+  }
+}
+
+class _AuthStatusBanner extends StatelessWidget {
+  final String message;
+
+  const _AuthStatusBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7FF),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: AppTheme.blue),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppTheme.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

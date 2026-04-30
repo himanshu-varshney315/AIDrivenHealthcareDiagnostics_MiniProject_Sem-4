@@ -44,12 +44,38 @@ def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
     return ocr_text
 
 
+def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> str:
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if extension == "txt":
+        return _decode_text_bytes(file_bytes)
+    if extension in {"png", "jpg", "jpeg"}:
+        return extract_text_from_image_bytes(file_bytes)
+    return extract_text_from_pdf_bytes(file_bytes)
+
+
+def extract_text_from_image_bytes(file_bytes: bytes) -> str:
+    if not file_bytes or not ocr_is_available():
+        return ""
+
+    image = Image.open(BytesIO(file_bytes))
+    return pytesseract.image_to_string(image).strip()
+
+
 def ocr_is_available() -> bool:
     return (
         pytesseract is not None
         and Image is not None
         and shutil.which("tesseract") is not None
     )
+
+
+def _decode_text_bytes(file_bytes: bytes) -> str:
+    for encoding in ("utf-8", "utf-16", "latin-1"):
+        try:
+            return file_bytes.decode(encoding).strip()
+        except UnicodeDecodeError:
+            continue
+    return ""
 
 
 def _extract_with_ocr(document: fitz.Document) -> str:

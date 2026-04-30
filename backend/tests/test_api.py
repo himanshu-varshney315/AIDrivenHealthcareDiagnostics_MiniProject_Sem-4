@@ -1,5 +1,12 @@
+import io
+import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from app import create_app
 from database.db import db
@@ -27,6 +34,7 @@ class ApiTestCase(unittest.TestCase):
         with self.app.app_context():
             db.session.remove()
             db.drop_all()
+            db.engine.dispose()
 
     def test_signup_and_login_flow(self):
         signup_response = self.client.post(
@@ -91,6 +99,69 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["prediction"], "Influenza")
 
+    def test_protected_route_rejects_missing_token(self):
+        response = self.client.get("/reports/history")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.get_json()["message"],
+            "Authentication required.",
+        )
+
+    def test_protected_route_rejects_invalid_token(self):
+        response = self.client.get(
+            "/reports/history",
+            headers={"Authorization": "Bearer not-a-real-token"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.get_json()["message"],
+            "Invalid authentication token.",
+        )
+
+    @patch("services.report_analysis_service.forward_report_to_ml_api")
+    def test_report_upload_accepts_plain_text_report(self, mock_forward_report):
+        mock_forward_report.return_value = {
+            "prediction": "Anemia",
+            "confidence": 0.72,
+            "urgency": "medium",
+            "extracted_symptoms": ["fatigue"],
+            "recommendations": ["Review CBC findings with a clinician."],
+            "precautions": ["Seek help for severe weakness."],
+            "explanation": "Low hemoglobin language was detected.",
+        }
+
+        self.client.post(
+            "/signup",
+            json={
+                "name": "Text Upload User",
+                "email": "text-upload@example.com",
+                "password": "password123",
+            },
+        )
+        login_response = self.client.post(
+            "/login",
+            json={"email": "text-upload@example.com", "password": "password123"},
+        )
+        token = login_response.get_json()["token"]
+
+        response = self.client.post(
+            "/upload-report",
+            data={
+                "file": (
+                    io.BytesIO(b"hemoglobin 9.8 fatigue"),
+                    "lab-report.txt",
+                )
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["prediction"], "Anemia")
+        mock_forward_report.assert_called_once()
+
     def test_reports_overview_requires_admin_role(self):
         with self.app.app_context():
             hashed_password = bcrypt.generate_password_hash("password123").decode(
@@ -153,6 +224,26 @@ class ApiTestCase(unittest.TestCase):
         payload = allowed_response.get_json()
         self.assertEqual(payload["summary"]["total_analyses"], 1)
         self.assertEqual(payload["summary"]["high_urgency_count"], 1)
+
+    @patch.dict("os.environ", {"FLASK_ENV": "production"}, clear=False)
+    def test_create_app_accepts_test_secret_in_production_environment(self):
+        app = create_app(
+            {
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+                "JWT_SECRET_KEY": "test-secret-key-with-at-least-32-bytes",
+            }
+        )
+
+        self.assertEqual(
+            app.config["JWT_SECRET_KEY"],
+            "test-secret-key-with-at-least-32-bytes",
+        )
+
+        with app.app_context():
+            db.session.remove()
+            db.drop_all()
+            db.engine.dispose()
 
 
 if __name__ == "__main__":

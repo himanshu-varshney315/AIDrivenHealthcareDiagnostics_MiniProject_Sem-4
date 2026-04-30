@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from flask import Flask
 from flask_jwt_extended import JWTManager
@@ -11,10 +12,35 @@ from services.auth_management import bcrypt
 from services.app_bootstrap import configure_cors, initialize_database, install_security_headers
 
 
+def configure_jwt_callbacks(jwt: JWTManager) -> None:
+    @jwt.unauthorized_loader
+    def handle_missing_token(reason: str):
+        return {"message": "Authentication required."}, 401
+
+    @jwt.invalid_token_loader
+    def handle_invalid_token(reason: str):
+        return {"message": "Invalid authentication token."}, 401
+
+    @jwt.expired_token_loader
+    def handle_expired_token(jwt_header, jwt_payload):
+        return {"message": "Session expired. Please sign in again."}, 401
+
+    @jwt.revoked_token_loader
+    def handle_revoked_token(jwt_header, jwt_payload):
+        return {"message": "Authentication token is no longer valid."}, 401
+
+    @jwt.needs_fresh_token_loader
+    def handle_non_fresh_token(jwt_header, jwt_payload):
+        return {"message": "Fresh authentication is required."}, 401
+
+
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-    app.config["JWT_SECRET_KEY"] = get_jwt_secret_key()
+    instance_dir = Path(app.instance_path)
+    instance_dir.mkdir(parents=True, exist_ok=True)
+    database_path = instance_dir / "database.db"
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{database_path.as_posix()}"
     app.config["MAX_CONTENT_LENGTH"] = int(
         os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))
     )
@@ -23,12 +49,16 @@ def create_app(test_config: dict | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
+    if not app.config.get("JWT_SECRET_KEY"):
+        app.config["JWT_SECRET_KEY"] = get_jwt_secret_key()
+
     configure_cors(app)
     install_security_headers(app)
 
     db.init_app(app)
     bcrypt.init_app(app)
-    JWTManager(app)
+    jwt = JWTManager(app)
+    configure_jwt_callbacks(jwt)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(report_bp)

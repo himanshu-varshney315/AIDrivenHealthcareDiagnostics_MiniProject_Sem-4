@@ -5,6 +5,7 @@ This folder contains a standalone ML module for training and serving a medical r
 ## Features
 
 - PDF text extraction using `pdfplumber` with PyMuPDF fallback
+- TXT and image report extraction, with OCR for PNG/JPG files when Tesseract is installed
 - Text preprocessing and tokenization
 - Entity extraction for symptoms, diseases, medications, and lab values
 - Baseline disease classification using `scikit-learn`
@@ -63,7 +64,7 @@ POST /analyze-report
 
 Form field:
 
-- `file`: PDF medical report
+- `file`: PDF, TXT, PNG, JPG, or JPEG medical report
 
 Response shape:
 

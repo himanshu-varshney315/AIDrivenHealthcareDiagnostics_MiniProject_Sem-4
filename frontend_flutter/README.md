@@ -6,8 +6,9 @@ Flutter client for the healthcare diagnostics project.
 
 - Splash, login, and signup flow
 - Dashboard and profile screens
-- PDF medical report selection and upload
+- PDF, TXT, PNG, and JPG medical report selection and upload
 - Backend API integration for authentication and report analysis
+- In-app notification timeline for analysis status and high-priority results
 - Clinics lookup with Google Maps and Google Places
 
 ## Run
@@ -47,7 +48,7 @@ Enable these APIs in your Google Cloud project:
 Edit `android/local.properties` and add:
 
 ```properties
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+MAPS_RUNTIME_KEY=your_google_maps_api_key
 ```
 
 ### 3. Add the API key for iOS maps
@@ -55,7 +56,7 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 Edit both `ios/Flutter/Debug.xcconfig` and `ios/Flutter/Release.xcconfig`, then add:
 
 ```xcconfig
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+MAPS_RUNTIME_KEY=your_google_maps_api_key
 ```
 
 ### 4. Pass the key to Flutter for Places API requests
@@ -63,5 +64,5 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 Run the app with:
 
 ```bash
-flutter run --dart-define=GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+flutter run --dart-define=MAPS_RUNTIME_KEY=your_google_maps_api_key
 ```

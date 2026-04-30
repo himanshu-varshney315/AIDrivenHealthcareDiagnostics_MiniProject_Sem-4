@@ -8,8 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_bar.dart';
+import '../widgets/app_ui.dart';
 
-const _googleMapsApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+const _googleMapsApiKey = String.fromEnvironment('MAPS_RUNTIME_KEY');
 
 class ClinicsScreen extends StatefulWidget {
   const ClinicsScreen({super.key});
@@ -24,6 +25,16 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
   List<_ClinicPlace> _clinics = const [];
   bool _isLoading = true;
   String? _errorMessage;
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'All';
+
+  static const List<String> _filters = <String>[
+    'All',
+    'General',
+    'Cardio',
+    'Dental',
+    'Pediatrics',
+  ];
 
   @override
   void initState() {
@@ -34,6 +45,7 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -83,7 +95,7 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
           CameraUpdate.newLatLngBounds(_buildBounds(position, clinics), 56),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -185,7 +197,7 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
       );
     }
 
-    for (final clinic in _clinics) {
+    for (final clinic in _visibleClinics) {
       markers.add(
         Marker(
           markerId: MarkerId(clinic.id),
@@ -195,6 +207,20 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
       );
     }
     return markers;
+  }
+
+  List<_ClinicPlace> get _visibleClinics {
+    final query = _searchController.text.trim().toLowerCase();
+    return _clinics.where((clinic) {
+      final matchesFilter =
+          _selectedFilter == 'All' || clinic.category == _selectedFilter;
+      final matchesQuery =
+          query.isEmpty ||
+          clinic.name.toLowerCase().contains(query) ||
+          clinic.address.toLowerCase().contains(query) ||
+          clinic.category.toLowerCase().contains(query);
+      return matchesFilter && matchesQuery;
+    }).toList();
   }
 
   Future<void> _openDirections(_ClinicPlace clinic) async {
@@ -215,165 +241,197 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
       position?.latitude ?? 28.6139,
       position?.longitude ?? 77.2090,
     );
+    final visibleClinics = _visibleClinics;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       bottomNavigationBar: const AppBottomBar(selectedItem: 'Clinics'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Care Nearby',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
       body: RefreshIndicator(
         onRefresh: _loadNearbyClinics,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF4FBFD), Color(0xFFEDF7FA)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFFDDE8EE)),
+            AppHeader(
+              eyebrow: 'Clinics',
+              title: 'Care nearby',
+              subtitle:
+                  'Search clinics, view the map, and open directions from one place.',
+              trailing: AppIconButton(
+                icon: Icons.my_location_rounded,
+                onTap: _isLoading ? null : _loadNearbyClinics,
               ),
+            ),
+            const SizedBox(height: 20),
+            AppCard(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: AppTheme.heroGradient,
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Find care close to you',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                  const AppBadge(
+                    text: 'Unified care finder',
+                    color: Colors.white,
+                    backgroundColor: Color(0x29FFFFFF),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Find the right place faster',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _googleMapsApiKey.isEmpty
-                        ? 'Add your Google Maps API key to activate live nearby clinic search.'
-                        : 'Using your current location to show nearby clinics, map pins, and quick directions.',
-                    style: const TextStyle(
-                      fontSize: 14,
+                  const Text(
+                    'Search by clinic name, area, or specialty, then compare nearby options without leaving the screen.',
+                    style: TextStyle(
+                      color: Colors.white,
                       height: 1.45,
-                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: SizedBox(
-                height: 320,
-                child: _googleMapsApiKey.isEmpty
-                    ? Container(
-                        color: const Color(0xFFEFF3FA),
-                        padding: const EdgeInsets.all(24),
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.map_outlined,
-                              size: 48,
-                              color: Color(0xFF6D7A8F),
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'Map preview is disabled until a Google Maps API key is configured.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                height: 1.4,
-                                color: Color(0xFF5B6270),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : Stack(
-                        children: [
-                          GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: initialTarget,
-                              zoom: position == null ? 11 : 13.5,
-                            ),
-                            myLocationEnabled: position != null,
-                            myLocationButtonEnabled: false,
-                            zoomControlsEnabled: false,
-                            markers: _markers(),
-                            onMapCreated: (controller) {
-                              _mapController = controller;
-                            },
-                          ),
-                          if (_isLoading)
-                            const Positioned.fill(
-                              child: ColoredBox(
-                                color: Color(0xA6FFFFFF),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: 'Search clinic, specialty, or area',
+                prefixIcon: Icon(Icons.search_rounded),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 42,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, index) {
+                  final filter = _filters[index];
+                  return ChoiceChip(
+                    label: Text(filter),
+                    selected: filter == _selectedFilter,
+                    onSelected: (_) => setState(() => _selectedFilter = filter),
+                  );
+                },
+                separatorBuilder: (context, index) => const SizedBox(width: 10),
+                itemCount: _filters.length,
               ),
             ),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _loadNearbyClinics,
-                    icon: const Icon(Icons.my_location_rounded),
-                    label: const Text('Refresh Nearby'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: AppTheme.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: SizedBox(
+                  height: 320,
+                  child: _googleMapsApiKey.isEmpty
+                      ? Container(
+                          color: AppTheme.backgroundRaised,
+                          padding: const EdgeInsets.all(24),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.map_outlined,
+                                size: 48,
+                                color: AppTheme.violet,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'Map preview is disabled until a Google Maps API key is configured.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  height: 1.45,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Stack(
+                          children: [
+                            GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: initialTarget,
+                                zoom: position == null ? 11 : 13.5,
+                              ),
+                              myLocationEnabled: position != null,
+                              myLocationButtonEnabled: false,
+                              zoomControlsEnabled: false,
+                              markers: _markers(),
+                              onMapCreated: (controller) {
+                                _mapController = controller;
+                              },
+                            ),
+                            if (_isLoading)
+                              const Positioned.fill(
+                                child: ColoredBox(
+                                  color: Color(0xA6FFFFFF),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                 ),
-              ],
+              ),
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FBFD),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFDDE7ED)),
-                ),
+              AppCard(
+                color: AppTheme.softSurface,
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(
                     fontSize: 14,
-                    height: 1.4,
+                    height: 1.45,
                     color: AppTheme.textMuted,
                   ),
                 ),
               ),
             ],
+            const SizedBox(height: 18),
+            AppCard(
+              color: AppTheme.sand,
+              border: Border.all(color: AppTheme.amber.withValues(alpha: 0.2)),
+              child: const Row(
+                children: [
+                  Icon(Icons.local_hospital_rounded, color: AppTheme.amber),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'If symptoms feel severe or suddenly worse, call before traveling and seek urgent in-person care.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
-            const Text(
-              'Closest options',
-              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            SectionTitle(
+              title: 'Nearby options',
+              action: visibleClinics.isEmpty ? null : '${visibleClinics.length} found',
             ),
             const SizedBox(height: 12),
-            if (_clinics.isEmpty && !_isLoading)
-              const Text(
-                'No nearby clinics to show yet.',
-                style: TextStyle(color: Color(0xFF6B7483)),
+            if (visibleClinics.isEmpty && !_isLoading)
+              const AppCard(
+                child: Text(
+                  'No nearby clinics match the current search. Try another specialty or refresh your location.',
+                  style: TextStyle(color: AppTheme.textMuted, height: 1.45),
+                ),
               ),
-            for (final clinic in _clinics) ...[
+            for (final clinic in visibleClinics) ...[
               _ClinicCard(
                 clinic: clinic,
                 onDirectionsTap: () => _openDirections(clinic),
@@ -395,19 +453,7 @@ class _ClinicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 16,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -415,10 +461,10 @@ class _ClinicCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF6F7),
+                  color: AppTheme.scrub,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
@@ -435,44 +481,90 @@ class _ClinicCard extends StatelessWidget {
                       clinic.name,
                       style: const TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       clinic.address,
                       style: const TextStyle(
                         fontSize: 13,
-                        height: 1.35,
-                        color: Color(0xFF66707F),
+                        height: 1.4,
+                        color: AppTheme.textMuted,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (clinic.rating != null)
-                Text(
-                  '${clinic.rating!.toStringAsFixed(1)}★',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2A2F39),
-                  ),
-                ),
+              AppBadge(
+                text: clinic.category,
+                color: AppTheme.blue,
+              ),
             ],
           ),
           const SizedBox(height: 14),
-          ElevatedButton.icon(
-            onPressed: onDirectionsTap,
-            icon: const Icon(Icons.directions_rounded),
-            label: const Text('Open Directions'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF111827),
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(44),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _InfoPill(icon: Icons.route_rounded, label: clinic.distanceLabel),
+              if (clinic.rating != null)
+                _InfoPill(
+                  icon: Icons.star_rounded,
+                  label: clinic.rating!.toStringAsFixed(1),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onDirectionsTap,
+                  icon: const Icon(Icons.directions_rounded),
+                  label: const Text('Open directions'),
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onDirectionsTap,
+                  icon: const Icon(Icons.navigation_rounded),
+                  label: const Text('Go now'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _InfoPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.softSurface,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: AppTheme.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -515,4 +607,16 @@ class _ClinicPlace {
       googleMapsUri: json['googleMapsUri'] as String?,
     );
   }
+
+  String get category {
+    final text = '$name $address'.toLowerCase();
+    if (text.contains('card')) return 'Cardio';
+    if (text.contains('dental')) return 'Dental';
+    if (text.contains('child') || text.contains('pediatric')) {
+      return 'Pediatrics';
+    }
+    return 'General';
+  }
+
+  String get distanceLabel => 'Nearby';
 }

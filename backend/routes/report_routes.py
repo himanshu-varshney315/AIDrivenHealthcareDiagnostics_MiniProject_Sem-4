@@ -26,7 +26,7 @@ def upload_report():
             uploaded_file=uploaded_file,
         )
         if validation_error:
-            if validation_error == "Uploaded PDF exceeds the 10 MB limit":
+            if validation_error == "Uploaded report exceeds the 10 MB limit":
                 return jsonify({"message": validation_error}), 413
             return jsonify({"message": validation_error}), status_code
         return jsonify(analysis_result), status_code
