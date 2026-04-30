@@ -45,6 +45,21 @@ class MlSmokeTestCase(unittest.TestCase):
         self.assert_analysis_shape(payload)
         self.assertEqual(payload["task"], "symptom")
 
+    def test_incompatible_model_artifact_uses_heuristic_fallback(self):
+        class IncompatiblePipeline:
+            def predict_proba(self, text):
+                raise AttributeError("'LogisticRegression' object has no attribute 'multi_class'")
+
+        with patch(
+            "Ml_model.predict._load_artifact",
+            return_value={"pipeline": IncompatiblePipeline()},
+        ):
+            payload = analyze_symptom_text("fever and body ache since yesterday")
+
+        self.assert_analysis_shape(payload)
+        self.assertEqual(payload["task"], "symptom")
+        self.assertNotEqual(payload["prediction"], "Unknown")
+
     def test_metrics_artifact_writer_records_lifecycle_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             metrics_path = Path(temp_dir) / "metrics.json"

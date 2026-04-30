@@ -8,6 +8,7 @@ from config import get_jwt_secret_key
 from database.db import db
 from routes.auth_routes import auth_bp
 from routes.report_routes import report_bp
+from routes.wearable_routes import wearable_bp
 from services.auth_management import bcrypt
 from services.app_bootstrap import configure_cors, initialize_database, install_security_headers
 
@@ -38,7 +39,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
     instance_dir = Path(app.instance_path)
     instance_dir.mkdir(parents=True, exist_ok=True)
-    database_path = instance_dir / "database.db"
+    database_path = Path(
+        os.environ.get("DATABASE_PATH", str(instance_dir / "database.db"))
+    )
+    database_path.parent.mkdir(parents=True, exist_ok=True)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{database_path.as_posix()}"
     app.config["MAX_CONTENT_LENGTH"] = int(
@@ -62,6 +66,11 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(report_bp)
+    app.register_blueprint(wearable_bp)
+
+    @app.get("/health")
+    def health_check():
+        return {"status": "ok"}, 200
 
     with app.app_context():
         initialize_database()

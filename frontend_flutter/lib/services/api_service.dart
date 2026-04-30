@@ -216,6 +216,90 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> syncWearableSummary(
+    Map<String, dynamic> summary,
+  ) async {
+    try {
+      final headers = await _authorizedHeaders();
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/wearables/sync"),
+            headers: {...headers, "Content-Type": "application/json"},
+            body: jsonEncode(summary),
+          )
+          .timeout(_requestTimeout);
+
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/vitals',
+      );
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError();
+    } on TimeoutException {
+      return _timeoutError();
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchWearableLatest() async {
+    try {
+      final headers = await _authorizedHeaders();
+      final response = await http
+          .get(Uri.parse("$baseUrl/wearables/latest"), headers: headers)
+          .timeout(_requestTimeout);
+
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/vitals',
+      );
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError();
+    } on TimeoutException {
+      return _timeoutError();
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchWearableHistory({int days = 7}) async {
+    try {
+      final headers = await _authorizedHeaders();
+      final response = await http
+          .get(
+            Uri.parse("$baseUrl/wearables/history?days=$days"),
+            headers: headers,
+          )
+          .timeout(_requestTimeout);
+
+      _throwForProtectedStatus(
+        response.statusCode,
+        response.body,
+        fromRoute: '/vitals',
+      );
+      return _decodeResponse(response);
+    } on SocketException {
+      return _networkError();
+    } on TimeoutException {
+      return _timeoutError();
+    } on HttpException catch (e) {
+      return _networkError(e.message);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      return _networkError("Unexpected error: $e");
+    }
+  }
+
   Map<String, dynamic> _decodeResponse(http.Response response) {
     Map<String, dynamic> data;
 

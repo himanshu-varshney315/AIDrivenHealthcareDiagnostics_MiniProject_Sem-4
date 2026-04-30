@@ -12,6 +12,7 @@ import 'screens/profile_screen.dart';
 import 'screens/find_clinics_screen.dart';
 import 'screens/system_log_screen.dart';
 import 'screens/upload_report_screen.dart';
+import 'screens/vitals_screen.dart';
 import 'services/auth_controller.dart';
 import 'theme/app_theme.dart';
 import 'widgets/route_guards.dart';
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/system-log': (context) =>
             const ProtectedRoute(child: SystemLogScreen()),
         '/reports': (context) => const ProtectedRoute(child: ReportScreen()),
+        '/vitals': (context) => const ProtectedRoute(child: VitalsScreen()),
         '/admin-overview': (context) => const ProtectedRoute(
           requiredRole: 'admin',
           child: AdminOverviewScreen(),

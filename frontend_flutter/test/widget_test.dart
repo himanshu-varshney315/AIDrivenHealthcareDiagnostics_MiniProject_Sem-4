@@ -13,7 +13,7 @@ void main() {
   testWidgets('app renders splash route', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text(AppIdentity.appName), findsOneWidget);
+    expect(find.text(AppIdentity.appName), findsWidgets);
     expect(find.text('Upload reports'), findsOneWidget);
   });
 

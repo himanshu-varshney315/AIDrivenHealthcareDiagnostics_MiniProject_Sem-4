@@ -557,7 +557,10 @@ def _load_artifact(task: str) -> dict | None:
     model_path = MODEL_PATHS[task]
     if not Path(model_path).exists():
         return None
-    return joblib.load(model_path)
+    try:
+        return joblib.load(model_path)
+    except (AttributeError, TypeError, ValueError, ImportError):
+        return None
 
 
 @lru_cache(maxsize=1)
@@ -664,27 +667,31 @@ def _analyze_text(text: str, task: str) -> Dict[str, object]:
         predicted_label, confidence, probabilities = heuristic_label, heuristic_confidence, heuristic_probabilities
     else:
         pipeline = artifact["pipeline"]
-        probability_matrix = pipeline.predict_proba([processed_text])[0]
-        labels = pipeline.classes_
-        model_probabilities = {label: float(score) for label, score in zip(labels, probability_matrix)}
-        combined_probabilities = _blend_probabilities(
-            model_probabilities,
-            heuristic_probabilities,
-            raw_text=text,
-            entities=entities,
-            task=task,
-        )
-        ranked_probabilities = sorted(
-            combined_probabilities.items(),
-            key=lambda item: item[1],
-            reverse=True,
-        )
-        predicted_label = ranked_probabilities[0][0]
-        confidence = ranked_probabilities[0][1]
-        probabilities = {
-            label: round(score, 4)
-            for label, score in ranked_probabilities
-        }
+        try:
+            probability_matrix = pipeline.predict_proba([processed_text])[0]
+            labels = pipeline.classes_
+        except (AttributeError, TypeError, ValueError):
+            predicted_label, confidence, probabilities = heuristic_label, heuristic_confidence, heuristic_probabilities
+        else:
+            model_probabilities = {label: float(score) for label, score in zip(labels, probability_matrix)}
+            combined_probabilities = _blend_probabilities(
+                model_probabilities,
+                heuristic_probabilities,
+                raw_text=text,
+                entities=entities,
+                task=task,
+            )
+            ranked_probabilities = sorted(
+                combined_probabilities.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+            predicted_label = ranked_probabilities[0][0]
+            confidence = ranked_probabilities[0][1]
+            probabilities = {
+                label: round(score, 4)
+                for label, score in ranked_probabilities
+            }
 
     explanation = _build_explanation(predicted_label, confidence, entities)
     guidance = _build_guidance(predicted_label, text, task=task)

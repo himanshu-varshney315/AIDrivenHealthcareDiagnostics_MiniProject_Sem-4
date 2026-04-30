@@ -1,6 +1,7 @@
 import io
 import sys
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -12,8 +13,10 @@ from app import create_app
 from database.db import db
 from models.report_analysis_model import ReportAnalysis
 from models.user_model import User
+from models.wearable_model import WearableDailySummary
 from services.auth_management import bcrypt
 from services.security import rate_limiter, sanitize_text
+from services.wearable_risk_service import score_wearable_risk
 
 
 class ApiTestCase(unittest.TestCase):
@@ -253,6 +256,51 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn("probabilities", response.get_json())
         mock_forward_report.assert_called_once()
 
+    @patch("services.report_analysis_service.analyze_symptoms_locally")
+    @patch("services.report_analysis_service._send_request")
+    def test_symptom_analysis_falls_back_when_ml_service_is_unreachable(
+        self,
+        mock_send_request,
+        mock_analyze_symptoms_locally,
+    ):
+        mock_send_request.side_effect = RuntimeError(
+            "Could not reach ML API. Start it with: python -m Ml_model.app"
+        )
+        mock_analyze_symptoms_locally.return_value = {
+            "prediction": "Influenza",
+            "confidence": 0.71,
+            "urgency": "medium",
+            "extracted_symptoms": ["fever", "body ache"],
+            "recommendations": ["Rest and drink fluids."],
+            "precautions": ["Monitor fever."],
+            "explanation": "Symptoms match a flu-like pattern.",
+        }
+
+        self.client.post(
+            "/signup",
+            json={
+                "name": "Fallback User",
+                "email": "fallback@example.com",
+                "password": "password123",
+            },
+        )
+        token = self.client.post(
+            "/login",
+            json={"email": "fallback@example.com", "password": "password123"},
+        ).get_json()["token"]
+
+        response = self.client.post(
+            "/analyze-symptoms",
+            json={"symptoms_text": "fever and body ache since yesterday"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["prediction"], "Influenza")
+        mock_analyze_symptoms_locally.assert_called_once_with(
+            "fever and body ache since yesterday"
+        )
+
     def test_report_upload_validation_failures(self):
         self.client.post(
             "/signup",
@@ -451,6 +499,156 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn("entities", item)
         self.assertIn("probabilities", item)
         self.assertIn("seek_care", item)
+
+    def test_wearable_routes_require_authentication(self):
+        latest_response = self.client.get("/wearables/latest")
+        sync_response = self.client.post("/wearables/sync", json={"steps": 4200})
+
+        self.assertEqual(latest_response.status_code, 401)
+        self.assertEqual(sync_response.status_code, 401)
+
+    def test_wearable_sync_validates_and_ignores_unsupported_metrics(self):
+        self.client.post(
+            "/signup",
+            json={
+                "name": "Wearable User",
+                "email": "wearable@example.com",
+                "password": "password123",
+            },
+        )
+        token = self.client.post(
+            "/login",
+            json={"email": "wearable@example.com", "password": "password123"},
+        ).get_json()["token"]
+
+        empty_response = self.client.post(
+            "/wearables/sync",
+            json={"metrics": {"unsupported": 123}},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(empty_response.status_code, 400)
+
+        sync_response = self.client.post(
+            "/wearables/sync",
+            json={
+                "date": "2026-04-30",
+                "metrics": {
+                    "latest_heart_rate": 82,
+                    "average_heart_rate": 76,
+                    "steps": 6500,
+                    "sleep_minutes": 430,
+                    "calories": 210,
+                    "spo2": 98,
+                    "unsupported": 999,
+                },
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(sync_response.status_code, 200)
+        payload = sync_response.get_json()["summary"]
+        self.assertEqual(payload["metrics"]["steps"], 6500)
+        self.assertNotIn("unsupported", payload["metrics"])
+        self.assertEqual(payload["risk"]["risk_level"], "low")
+
+    def test_wearable_latest_and_history_are_user_scoped(self):
+        with self.app.app_context():
+            hashed_password = bcrypt.generate_password_hash("password123").decode(
+                "utf-8"
+            )
+            first_user = User(
+                name="First Wearable",
+                email="first-wearable@example.com",
+                password=hashed_password,
+                role="user",
+            )
+            second_user = User(
+                name="Second Wearable",
+                email="second-wearable@example.com",
+                password=hashed_password,
+                role="user",
+            )
+            db.session.add_all([first_user, second_user])
+            db.session.commit()
+            db.session.add(
+                WearableDailySummary(
+                    user_id=first_user.id,
+                    summary_date=date.fromisoformat("2026-04-29"),
+                    latest_heart_rate=72,
+                    steps=7200,
+                    risk_score=8,
+                    risk_level="low",
+                    factors_json='["No major wearable risk marker detected today"]',
+                    recommendations_json='["Keep syncing wearable data"]',
+                )
+            )
+            db.session.add(
+                WearableDailySummary(
+                    user_id=second_user.id,
+                    summary_date=date.fromisoformat("2026-04-30"),
+                    latest_heart_rate=130,
+                    steps=900,
+                    risk_score=70,
+                    risk_level="high",
+                    factors_json='["Very high latest heart rate"]',
+                    recommendations_json='["Consider prompt clinical advice"]',
+                )
+            )
+            db.session.commit()
+
+        first_token = self.client.post(
+            "/login",
+            json={"email": "first-wearable@example.com", "password": "password123"},
+        ).get_json()["token"]
+
+        latest_response = self.client.get(
+            "/wearables/latest",
+            headers={"Authorization": f"Bearer {first_token}"},
+        )
+        history_response = self.client.get(
+            "/wearables/history?days=7",
+            headers={"Authorization": f"Bearer {first_token}"},
+        )
+
+        self.assertEqual(latest_response.status_code, 200)
+        self.assertEqual(latest_response.get_json()["summary"]["metrics"]["steps"], 7200)
+        self.assertEqual(len(history_response.get_json()["history"]), 1)
+        self.assertEqual(
+            history_response.get_json()["history"][0]["risk"]["risk_level"],
+            "low",
+        )
+
+    def test_wearable_risk_scoring_levels(self):
+        low = score_wearable_risk(
+            {
+                "latest_heart_rate": 72,
+                "average_heart_rate": 70,
+                "steps": 8000,
+                "sleep_minutes": 450,
+                "spo2": 98,
+            }
+        )
+        moderate = score_wearable_risk(
+            {
+                "latest_heart_rate": 105,
+                "steps": 1500,
+                "sleep_minutes": 360,
+                "spo2": 96,
+            }
+        )
+        high = score_wearable_risk(
+            {
+                "latest_heart_rate": 128,
+                "average_heart_rate": 104,
+                "steps": 800,
+                "sleep_minutes": 240,
+                "spo2": 90,
+            }
+        )
+
+        self.assertEqual(low["risk_level"], "low")
+        self.assertEqual(moderate["risk_level"], "moderate")
+        self.assertEqual(high["risk_level"], "high")
 
     @patch.dict("os.environ", {"FLASK_ENV": "production"}, clear=False)
     def test_create_app_accepts_test_secret_in_production_environment(self):

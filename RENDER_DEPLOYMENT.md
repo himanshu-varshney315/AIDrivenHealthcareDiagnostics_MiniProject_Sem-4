@@ -1,0 +1,44 @@
+# Deploy Ayuva on Render
+
+This repo includes a `render.yaml` Blueprint with two Docker web services:
+
+- `ayuva-ml`: ML analysis API
+- `ayuva-backend`: Flask API used by the Flutter app
+
+## Deploy
+
+1. Push this repository to GitHub.
+2. Open Render Dashboard.
+3. Select **New > Blueprint**.
+4. Connect this repo.
+5. Keep the Blueprint file path as `render.yaml`.
+6. Apply the Blueprint.
+
+Render will build both Docker services. The backend receives a generated
+`JWT_SECRET_KEY` and connects to the ML service through Render's private
+service host/port.
+
+## After Deploy
+
+Open the `ayuva-backend` service in Render and copy its public URL, for example:
+
+```text
+https://ayuva-backend.onrender.com
+```
+
+Use that URL when building the Flutter app:
+
+```powershell
+cd frontend_flutter
+flutter build appbundle --release --dart-define=API_BASE_URL=https://ayuva-backend.onrender.com
+```
+
+## Important Notes
+
+- The current Blueprint uses Render's free plan.
+- Free services can spin down when idle, so the first request after inactivity can be slow.
+- The SQLite database is stored on ephemeral container storage at `/tmp/ayuva/database.db`.
+  Data can be lost after redeploys or restarts. For real production use, move persistence
+  to Render Postgres or attach a persistent disk on a paid plan.
+- The ML service installs Torch and Transformers, so the first build can take a while.
+  If the free plan runs out of memory, change `ayuva-ml` from `free` to a larger plan.

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ayuva-ml
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Ml_model/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+
+  - type: web
+    name: ayuva-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: MAX_UPLOAD_BYTES
+        value: "10485760"
+      - key: DATABASE_PATH
+        value: /tmp/ayuva/database.db
+      - key: ML_SERVICE_HOSTPORT
+        fromService:
+          type: web
+          name: ayuva-ml
+          property: hostport

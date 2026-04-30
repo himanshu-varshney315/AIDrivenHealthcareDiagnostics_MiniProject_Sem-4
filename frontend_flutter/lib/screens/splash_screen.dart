@@ -377,6 +377,15 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        const AyuvaBrandMark(size: 34),
+        const SizedBox(width: 10),
+        Text(
+          AppIdentity.appName,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppTheme.navy,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         const Spacer(),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,

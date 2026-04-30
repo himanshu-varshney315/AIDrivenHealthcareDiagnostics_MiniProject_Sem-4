@@ -23,6 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _userEmail = '';
   Map<String, dynamic>? _latestAnalysis;
   Map<String, dynamic>? _trendSummary;
+  Map<String, dynamic>? _wearableSummary;
   List<Map<String, dynamic>> _history = const [];
   int _notificationCount = 0;
   int _profileCompletion = 0;
@@ -80,6 +81,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } on AuthException {
       historyResponse = const {};
     }
+    Map<String, dynamic> wearableResponse = const {};
+    try {
+      wearableResponse = await ApiService().fetchWearableLatest();
+    } on AuthException {
+      wearableResponse = const {};
+    }
 
     if (!mounted) return;
     setState(() {
@@ -108,6 +115,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .map((item) => Map<String, dynamic>.from(item))
             .toList();
         _latestAnalysis ??= _history.isNotEmpty ? _history.first : null;
+      }
+      if ((wearableResponse['status_code'] ?? 200) < 400) {
+        _wearableSummary = wearableResponse['summary'] as Map<String, dynamic>?;
       }
     });
   }
@@ -277,6 +287,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               scrollDirection: Axis.horizontal,
               children: [
                 StoryChip(
+                  icon: Icons.monitor_heart_rounded,
+                  label: 'Sync Vitals',
+                  color: AppTheme.coral,
+                  onTap: () => Navigator.pushNamed(context, '/vitals'),
+                ),
+                const SizedBox(width: 12),
+                StoryChip(
                   icon: Icons.upload_file_rounded,
                   label: 'Upload report',
                   color: AppTheme.clinicalGreen,
@@ -323,51 +340,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
+              final wearableMetrics = Map<String, dynamic>.from(
+                _wearableSummary?['metrics'] as Map? ?? const {},
+              );
+              final wearableRisk = Map<String, dynamic>.from(
+                _wearableSummary?['risk'] as Map? ?? const {},
+              );
+              final latestHeartRate = wearableMetrics['latest_heart_rate'];
               final cards = [
-                Expanded(
-                  child: MetricPill(
-                    icon: Icons.timeline_rounded,
-                    label: 'Trend',
-                    value: trend,
-                    color: AppTheme.blue,
-                  ),
+                MetricPill(
+                  icon: Icons.timeline_rounded,
+                  label: 'Trend',
+                  value: trend,
+                  color: AppTheme.blue,
                 ),
-                Expanded(
-                  child: MetricPill(
-                    icon: Icons.folder_open_rounded,
-                    label: 'Records',
-                    value: '${_history.length}',
-                    color: AppTheme.aqua,
-                  ),
+                MetricPill(
+                  icon: Icons.folder_open_rounded,
+                  label: 'Records',
+                  value: '${_history.length}',
+                  color: AppTheme.aqua,
                 ),
-                Expanded(
-                  child: MetricPill(
-                    icon: Icons.notifications_active_rounded,
-                    label: 'Alerts',
-                    value: '$_notificationCount',
-                    color: AppTheme.amber,
-                  ),
+                MetricPill(
+                  icon: Icons.notifications_active_rounded,
+                  label: 'Alerts',
+                  value: '$_notificationCount',
+                  color: AppTheme.amber,
                 ),
+                if (_wearableSummary != null)
+                  MetricPill(
+                    icon: Icons.monitor_heart_rounded,
+                    label: latestHeartRate == null
+                        ? 'Vitals risk'
+                        : 'Heart rate',
+                    value: latestHeartRate == null
+                        ? (wearableRisk['risk_level']?.toString() ?? 'Ready')
+                        : '${(latestHeartRate as num).round()} bpm',
+                    color: AppTheme.coral,
+                  ),
               ];
-              if (constraints.maxWidth > 700) {
-                return Row(
-                  children: [
-                    cards[0],
-                    const SizedBox(width: 12),
-                    cards[1],
-                    const SizedBox(width: 12),
-                    cards[2],
-                  ],
-                );
-              }
-              return Column(
-                children: [
-                  Row(
-                    children: [cards[0], const SizedBox(width: 12), cards[1]],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(children: [cards[2]]),
-                ],
+              return GridView.count(
+                crossAxisCount: constraints.maxWidth > 700 ? cards.length : 2,
+                childAspectRatio: constraints.maxWidth > 700 ? 2.3 : 1.9,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                children: cards,
               );
             },
           ),

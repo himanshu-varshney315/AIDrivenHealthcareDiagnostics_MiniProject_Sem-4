@@ -193,7 +193,7 @@ class MetricPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -203,8 +203,8 @@ class MetricPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
@@ -224,9 +224,11 @@ class MetricPill extends StatelessWidget {
                   style: const TextStyle(
                     color: AppTheme.textMuted,
                     fontSize: 12,
+                    height: 1.1,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 3),
                 Text(
                   value,
                   maxLines: 1,
@@ -234,6 +236,7 @@ class MetricPill extends StatelessWidget {
                   style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 16,
+                    height: 1.05,
                     fontWeight: FontWeight.w900,
                   ),
                 ),

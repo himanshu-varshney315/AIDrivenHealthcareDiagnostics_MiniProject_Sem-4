@@ -7,6 +7,11 @@ from Ml_model.utils.pdf_extractor import extract_text_from_file_bytes, ocr_is_av
 app = Flask(__name__)
 
 
+@app.get("/health")
+def health_check() -> tuple:
+    return jsonify({"status": "ok"}), 200
+
+
 @app.route("/analyze-report", methods=["POST"])
 def analyze_report() -> tuple:
     if "file" not in request.files:

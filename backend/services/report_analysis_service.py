@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from pathlib import Path
 from urllib import error, request as urllib_request
 
 from werkzeug.utils import secure_filename
@@ -150,7 +151,12 @@ def forward_symptoms_to_ml_api(symptoms_text):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    return _send_request(outgoing_request)
+    try:
+        return _send_request(outgoing_request)
+    except RuntimeError as exc:
+        if "Could not reach ML API" not in str(exc):
+            raise
+        return analyze_symptoms_locally(symptoms_text)
 
 
 def build_multipart_body(boundary, file_bytes, filename, content_type):
@@ -317,13 +323,36 @@ def normalize_analysis_result(result):
 
 def get_ml_api_url():
     """Return the report-analysis ML URL from env or the local development default."""
+    service_hostport = os.environ.get("ML_SERVICE_HOSTPORT", "").strip()
+    if service_hostport:
+        return f"http://{service_hostport}/analyze-report"
+
     return os.environ.get("ML_API_URL", DEFAULT_ML_API_URL).strip() or DEFAULT_ML_API_URL
 
 
 def get_ml_symptom_api_url():
     """Return the symptom-analysis ML URL from env or the local development default."""
+    service_hostport = os.environ.get("ML_SERVICE_HOSTPORT", "").strip()
+    if service_hostport:
+        return f"http://{service_hostport}/analyze-symptoms"
+
     configured = os.environ.get("ML_SYMPTOM_API_URL", DEFAULT_ML_SYMPTOM_API_URL)
     return configured.strip() or DEFAULT_ML_SYMPTOM_API_URL
+
+
+def analyze_symptoms_locally(symptoms_text):
+    """Use the bundled predictor when the separate ML service is not running."""
+    try:
+        from Ml_model.predict import analyze_symptom_text
+    except ModuleNotFoundError:
+        project_root = Path(__file__).resolve().parents[2]
+        import sys
+
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+        from Ml_model.predict import analyze_symptom_text
+
+    return analyze_symptom_text(symptoms_text)
 
 
 def _send_request(outgoing_request):
