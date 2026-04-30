@@ -3,6 +3,7 @@ pdfplumber
 pymupdf
 scikit-learn
 pandas
+numpy
 joblib
 transformers
 torch

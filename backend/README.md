@@ -79,6 +79,10 @@ Environment variables supported by the backend:
   Comma-separated allowed origins for cross-origin requests.
 - `FLASK_ENV`
   If set to `production`, the backend requires an explicit `JWT_SECRET_KEY`.
+- `ML_API_URL`
+  Report-analysis endpoint for the ML service. Defaults to `http://127.0.0.1:5001/analyze-report`.
+- `ML_SYMPTOM_API_URL`
+  Symptom-analysis endpoint for the ML service. Defaults to `http://127.0.0.1:5001/analyze-symptoms`.
 
 Example local env file:
 
@@ -86,6 +90,8 @@ Example local env file:
 JWT_SECRET_KEY=replace-with-a-long-random-secret
 MAX_UPLOAD_BYTES=10485760
 CORS_ORIGINS=http://127.0.0.1:5000,http://localhost:5000
+ML_API_URL=http://127.0.0.1:5001/analyze-report
+ML_SYMPTOM_API_URL=http://127.0.0.1:5001/analyze-symptoms
 ```
 
 ## Data Model
@@ -190,6 +196,21 @@ Consumes multipart form-data:
 
 The backend validates the file, forwards it to the ML service, stores the result, and returns analysis data plus trend context.
 
+Response fields include:
+
+- `prediction`
+- `confidence`
+- `urgency`
+- `explanation`
+- `extracted_symptoms`
+- `entities`
+- `probabilities`
+- `recommendations`
+- `precautions`
+- `recommended_medicines`
+- `seek_care`
+- `trend_summary`
+
 ### `POST /analyze-symptoms`
 
 Requires `Authorization: Bearer <token>`.
@@ -209,8 +230,10 @@ Returns:
 - urgency
 - explanation
 - extracted symptoms
+- entities and top probabilities
 - recommendations
 - precautions
+- seek-care guidance
 - trend summary
 
 ### `GET /reports/history`
@@ -252,6 +275,7 @@ Implemented protections:
 - Security response headers
 - Configurable CORS allowlist
 - SQLAlchemy ORM usage to reduce injection risk
+- Bearer-token JSON API design. CSRF protection is intentionally not used because the app does not rely on browser cookies for authentication. If cookie/session auth is introduced later, CSRF protection must be added with it.
 
 Current limitations:
 
@@ -292,6 +316,10 @@ Current test coverage includes:
 - signup and login flow
 - protected symptom analysis flow
 - admin-only authorization for overview access
+- auth validation failures and duplicate signup
+- upload validation and upload limits
+- rate limiting, CORS, JWT failures, and security headers
+- history serialization
 
 ## Common Issues
 

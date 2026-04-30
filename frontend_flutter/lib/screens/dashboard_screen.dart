@@ -112,6 +112,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  Future<void> _openProfile() async {
+    await Navigator.pushNamed(context, '/profile');
+    if (!mounted) return;
+    await _load();
+  }
+
   String get _greeting {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
@@ -290,13 +296,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: AppTheme.aqua,
                   onTap: () => Navigator.pushNamed(context, '/clinics'),
                 ),
-                const SizedBox(width: 12),
-                StoryChip(
-                  icon: Icons.person_rounded,
-                  label: 'Complete profile',
-                  color: AppTheme.violet,
-                  onTap: () => Navigator.pushNamed(context, '/profile'),
-                ),
+                if (_profileCompletion < 100) ...[
+                  const SizedBox(width: 12),
+                  StoryChip(
+                    icon: Icons.person_rounded,
+                    label: 'Complete profile',
+                    color: AppTheme.violet,
+                    onTap: _openProfile,
+                  ),
+                ],
                 if (_isAdmin) ...[
                   const SizedBox(width: 12),
                   StoryChip(
@@ -364,67 +372,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           const SizedBox(height: 22),
-          AppCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundRaised,
-                    borderRadius: BorderRadius.circular(18),
+          if (_profileCompletion < 100) ...[
+            AppCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppTheme.backgroundRaised,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.health_and_safety_rounded,
+                      color: AppTheme.clinicalGreen,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.health_and_safety_rounded,
-                    color: AppTheme.clinicalGreen,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _profileCompletion >= 100
-                            ? 'Profile ready for faster care'
-                            : 'Finish your care profile',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _profileCompletion >= 100
-                            ? 'Your identity, medical details, and emergency information are already saved.'
-                            : 'You are $_profileCompletion% complete. Add medical details and an emergency contact so follow-up is simpler.',
-                        style: const TextStyle(
-                          color: AppTheme.textMuted,
-                          height: 1.45,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Finish your care profile',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      LinearProgressIndicator(
-                        value: (_profileCompletion / 100)
-                            .clamp(0.0, 1.0)
-                            .toDouble(),
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(999),
-                        backgroundColor: AppTheme.backgroundRaised,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppTheme.clinicalGreen,
+                        const SizedBox(height: 6),
+                        Text(
+                          'You are $_profileCompletion% complete. Add medical details and an emergency contact so follow-up is simpler.',
+                          style: const TextStyle(
+                            color: AppTheme.textMuted,
+                            height: 1.45,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(
+                          value: (_profileCompletion / 100)
+                              .clamp(0.0, 1.0)
+                              .toDouble(),
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(999),
+                          backgroundColor: AppTheme.backgroundRaised,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppTheme.clinicalGreen,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/profile'),
-                  child: Text(_profileCompletion >= 100 ? 'View' : 'Finish'),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  TextButton(
+                    onPressed: _openProfile,
+                    child: const Text('Finish'),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 22),
+            const SizedBox(height: 22),
+          ],
           SectionTitle(
             title: 'Recent activity',
             action: 'View log',

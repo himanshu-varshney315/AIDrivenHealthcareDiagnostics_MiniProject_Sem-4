@@ -280,9 +280,9 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
                   const SizedBox(height: 12),
                   Text(
                     'Find the right place faster',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -421,7 +421,9 @@ class _ClinicsScreenState extends State<ClinicsScreen> {
             const SizedBox(height: 20),
             SectionTitle(
               title: 'Nearby options',
-              action: visibleClinics.isEmpty ? null : '${visibleClinics.length} found',
+              action: visibleClinics.isEmpty
+                  ? null
+                  : '${visibleClinics.length} found',
             ),
             const SizedBox(height: 12),
             if (visibleClinics.isEmpty && !_isLoading)
@@ -496,10 +498,7 @@ class _ClinicCard extends StatelessWidget {
                   ],
                 ),
               ),
-              AppBadge(
-                text: clinic.category,
-                color: AppTheme.blue,
-              ),
+              AppBadge(text: clinic.category, color: AppTheme.blue),
             ],
           ),
           const SizedBox(height: 14),

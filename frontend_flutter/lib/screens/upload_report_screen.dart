@@ -24,6 +24,7 @@ class _ReportScreenState extends State<ReportScreen> {
   File? _file;
   bool _loading = false;
   String? _error;
+  String? _status;
   Map<String, dynamic>? _result;
 
   Future<void> _pickFile() async {
@@ -32,9 +33,33 @@ class _ReportScreenState extends State<ReportScreen> {
       allowedExtensions: ['pdf', 'txt', 'png', 'jpg', 'jpeg'],
     );
     if (picked == null || picked.files.single.path == null) return;
+    final selectedFile = File(picked.files.single.path!);
+    final extension = p
+        .extension(selectedFile.path)
+        .replaceFirst('.', '')
+        .toLowerCase();
+    if (!['pdf', 'txt', 'png', 'jpg', 'jpeg'].contains(extension)) {
+      setState(() {
+        _file = null;
+        _error = 'Choose a PDF, TXT, PNG, JPG, or JPEG report.';
+        _status = null;
+        _result = null;
+      });
+      return;
+    }
+    if (await selectedFile.length() > _maxFileBytes) {
+      setState(() {
+        _file = selectedFile;
+        _error = 'Selected file is larger than 10 MB. Choose a smaller report.';
+        _status = null;
+        _result = null;
+      });
+      return;
+    }
     setState(() {
-      _file = File(picked.files.single.path!);
+      _file = selectedFile;
       _error = null;
+      _status = '${p.basename(selectedFile.path)} is ready to analyze.';
       _result = null;
     });
   }
@@ -43,13 +68,17 @@ class _ReportScreenState extends State<ReportScreen> {
     final file = _file;
     if (file == null) return;
     if (await file.length() > _maxFileBytes) {
-      setState(() => _error = 'Selected file is larger than 10 MB.');
+      setState(() {
+        _error = 'Selected file is larger than 10 MB. Choose a smaller report.';
+        _status = null;
+      });
       return;
     }
 
     setState(() {
       _loading = true;
       _error = null;
+      _status = 'Uploading ${p.basename(file.path)} for analysis...';
       _result = null;
     });
 
@@ -64,7 +93,10 @@ class _ReportScreenState extends State<ReportScreen> {
       if ((response['status_code'] ?? 200) >= 400 ||
           response['prediction'] == null) {
         final message = response['message']?.toString() ?? 'Analysis failed.';
-        setState(() => _error = message);
+        setState(() {
+          _error = message;
+          _status = 'Analysis did not complete. You can retry this upload.';
+        });
         await NotificationService().add(
           title: 'Report analysis needs attention',
           body: message,
@@ -75,6 +107,8 @@ class _ReportScreenState extends State<ReportScreen> {
 
       final result = Map<String, dynamic>.from(response);
       await AnalysisHistoryService().saveLastAnalysis(result);
+      if (!mounted) return;
+      setState(() => _status = 'Analysis complete. Review the summary below.');
       await NotificationService().add(
         title: 'Report analysis complete',
         body:
@@ -87,12 +121,21 @@ class _ReportScreenState extends State<ReportScreen> {
       setState(() => _result = result);
     } on ForbiddenException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() {
+        _error = e.message;
+        _status = 'Analysis stopped.';
+      });
     } on AuthException {
       if (!mounted) return;
-      setState(() => _error = 'Please sign in again to upload reports.');
+      setState(() {
+        _error = 'Please sign in again to upload reports.';
+        _status = 'Your session needs attention.';
+      });
     } catch (_) {
-      setState(() => _error = 'Could not analyze this report right now.');
+      setState(() {
+        _error = 'Could not analyze this report right now.';
+        _status = 'The report is still selected. You can retry.';
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -225,6 +268,16 @@ class _ReportScreenState extends State<ReportScreen> {
                     ),
                   ],
                 ),
+                if (_status != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _status!,
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -241,6 +294,14 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
             ),
+            if (_file != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _analyze,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry analysis'),
+              ),
+            ],
           ],
           if (_result == null) ...[
             const SizedBox(height: 18),
@@ -425,6 +486,21 @@ class _ResultView extends StatelessWidget {
         (result['recommendations'] as List<dynamic>? ?? const [])
             .map((item) => item.toString())
             .toList();
+    final precautions = (result['precautions'] as List<dynamic>? ?? const [])
+        .map((item) => item.toString())
+        .toList();
+    final medicines =
+        (result['recommended_medicines'] as List<dynamic>? ?? const [])
+            .map((item) => item.toString())
+            .toList();
+    final symptoms =
+        (result['extracted_symptoms'] as List<dynamic>? ?? const [])
+            .map((item) => item.toString())
+            .toList();
+    final entities = result['entities'] as Map<String, dynamic>? ?? const {};
+    final seekCare = result['seek_care']?.toString() ?? '';
+    final trendSummary =
+        result['trend_summary'] as Map<String, dynamic>? ?? const {};
     final probabilities =
         (result['probabilities'] as Map<String, dynamic>? ?? const {}).entries
             .map(
@@ -519,6 +595,42 @@ class _ResultView extends StatelessWidget {
             ),
           ),
         ],
+        if (symptoms.isNotEmpty || entities.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Extracted details',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 12),
+                if (symptoms.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: symptoms
+                        .map(
+                          (item) => AppBadge(text: item, color: AppTheme.blue),
+                        )
+                        .toList(),
+                  ),
+                if ((entities['lab_values'] as List<dynamic>? ?? const [])
+                    .isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Lab markers: ${(entities['lab_values'] as List<dynamic>).join(', ')}',
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
         if (recommendations.isNotEmpty) ...[
           const SizedBox(height: 16),
           AppCard(
@@ -552,6 +664,104 @@ class _ResultView extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (precautions.isNotEmpty ||
+            medicines.isNotEmpty ||
+            seekCare.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Care guidance',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                if (seekCare.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    seekCare,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                if (precautions.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ...precautions.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppTheme.amber,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                color: AppTheme.textMuted,
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                if (medicines.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Medicine notes',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  ...medicines.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          color: AppTheme.textMuted,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        if (trendSummary.isNotEmpty && trendSummary['message'] != null) ...[
+          const SizedBox(height: 16),
+          AppCard(
+            color: AppTheme.softSurface,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.trending_up_rounded, color: AppTheme.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    trendSummary['message'].toString(),
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
                     ),
                   ),
                 ),

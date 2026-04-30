@@ -11,10 +11,13 @@ EMAIL_PATTERN = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$", re.IGNORE
 
 
 class InMemoryRateLimiter:
+    """Small process-local limiter for development and test deployments."""
+
     def __init__(self) -> None:
         self._hits = defaultdict(deque)
 
     def is_allowed(self, key: str, limit: int, window_seconds: int) -> bool:
+        """Record one hit and report whether the key remains under the limit."""
         now = time.time()
         timestamps = self._hits[key]
         cutoff = now - window_seconds
@@ -28,11 +31,16 @@ class InMemoryRateLimiter:
         timestamps.append(now)
         return True
 
+    def reset(self) -> None:
+        """Clear tracked hits, mainly for deterministic tests."""
+        self._hits.clear()
+
 
 rate_limiter = InMemoryRateLimiter()
 
 
 def rate_limit(limit: int, window_seconds: int, scope: str):
+    """Limit requests for a route by client IP and logical scope."""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -55,6 +63,7 @@ def rate_limit(limit: int, window_seconds: int, scope: str):
 
 
 def require_role(*allowed_roles: str):
+    """Require a JWT with one of the allowed role claims."""
     normalized_roles = {role.strip().lower() for role in allowed_roles if role.strip()}
 
     def decorator(func):
@@ -73,17 +82,22 @@ def require_role(*allowed_roles: str):
 
 
 def is_valid_email(email: str) -> bool:
+    """Return whether a string looks like a valid email address."""
     return bool(EMAIL_PATTERN.fullmatch(email or ""))
 
 
 def is_valid_name(name: str) -> bool:
+    """Return whether a display name is within accepted length bounds."""
     cleaned = (name or "").strip()
     return 2 <= len(cleaned) <= 120
 
 
 def is_valid_password(password: str) -> bool:
+    """Return whether a password length matches current policy."""
     return 8 <= len(password or "") <= 128
 
 
 def sanitize_text(value: str, *, max_length: int) -> str:
-    return " ".join((value or "").strip().split())[:max_length]
+    """Collapse whitespace and cap untrusted text to a maximum length."""
+    cleaned = " ".join((value or "").strip().split())
+    return cleaned.replace("<", "").replace(">", "")[:max_length]

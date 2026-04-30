@@ -1,11 +1,11 @@
 {
-    "name": "PulseMate",
-    "short_name": "PulseMate",
+    "name": "Ayuva",
+    "short_name": "Ayuva",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#F6F7FB",
-    "theme_color": "#172033",
-    "description": "Smart report review, symptom guidance, and care follow-up in one place.",
+    "background_color": "#F3F8FA",
+    "theme_color": "#123247",
+    "description": "Personal health guidance, reports, and care continuity in one calm space.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

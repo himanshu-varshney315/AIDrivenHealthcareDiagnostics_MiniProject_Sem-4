@@ -91,3 +91,43 @@ text,label
 "i feel weak with diarrhea and cannot keep fluids well",Acute Diarrheal Disease
 "i have watery diarrhea and stomach cramps",Acute Diarrheal Disease
 "i am passing loose motions and feel dehydrated",Acute Diarrheal Disease
+"i have fever, dry cough, body ache and loss of smell",COVID-19
+"my covid test is positive and i have cough with tiredness",COVID-19
+"i feel feverish with sore throat, dry cough and low oxygen",COVID-19
+"i lost taste and smell and have headache with cough",COVID-19
+"i have breathlessness, fever and covid exposure",COVID-19
+"i have cough for three weeks with night sweats and weight loss",Tuberculosis
+"i am coughing blood and losing weight with evening fever",Tuberculosis
+"i have long lasting cough, poor appetite and night sweats",Tuberculosis
+"my tb test is positive and i feel weak with fever",Tuberculosis
+"i have chest cough, fever at night and weight loss",Tuberculosis
+"i have high fever with chills and sweating after mosquito bites",Malaria
+"i feel fever spikes, headache, chills and severe weakness",Malaria
+"i have malaria test positive with vomiting and body ache",Malaria
+"i get shivering fever, sweating and fatigue every day",Malaria
+"i have fever with chills, nausea and muscle pain",Malaria
+"i have prolonged fever, stomach pain and weakness",Typhoid
+"my widal test is positive and i have fever with poor appetite",Typhoid
+"i have typhoid symptoms with headache and abdominal discomfort",Typhoid
+"i feel sustained fever, loose stool and body ache",Typhoid
+"i have fever for many days with coated tongue and stomach pain",Typhoid
+"i have burning urination and need to urinate frequently",Urinary Tract Infection
+"i feel pain while passing urine with lower stomach pain",Urinary Tract Infection
+"my urine test shows pus cells and i have fever",Urinary Tract Infection
+"i have cloudy urine, urgency and burning micturition",Urinary Tract Infection
+"i have flank pain, fever and urinary infection symptoms",Urinary Tract Infection
+"my creatinine is high and my feet are swollen",Kidney Disease
+"i have reduced urine, swelling and kidney test abnormal",Kidney Disease
+"my egfr is low and i feel tired with puffy face",Kidney Disease
+"i have protein in urine, high blood pressure and swelling",Kidney Disease
+"i feel weak with abnormal kidney function and low urine output",Kidney Disease
+"i have yellow eyes, dark urine and high bilirubin",Liver Disease
+"my liver enzymes are high and i feel nauseated",Liver Disease
+"i have jaundice, poor appetite and abdominal swelling",Liver Disease
+"my hepatitis test is positive and i feel very tired",Liver Disease
+"i have right upper stomach pain with yellow skin and fatigue",Liver Disease
+"my tsh is high and i feel tired with weight gain",Thyroid Disorder
+"i have palpitations, weight loss and low tsh",Thyroid Disorder
+"i feel cold intolerance, constipation and fatigue",Thyroid Disorder
+"my thyroid test is abnormal and my neck looks swollen",Thyroid Disorder
+"i have heat intolerance, tremor and fast heartbeat",Thyroid Disorder

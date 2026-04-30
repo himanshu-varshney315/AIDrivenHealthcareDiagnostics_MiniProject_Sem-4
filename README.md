@@ -104,6 +104,35 @@ You can override the Flutter base URL with:
 flutter run --dart-define=API_BASE_URL=http://127.0.0.1:5000
 ```
 
+## Environment Setup
+
+Copy `.env.example` when you need local environment variables. Keep real `.env` files uncommitted.
+
+Important values:
+
+- `JWT_SECRET_KEY`: required for production; local development can generate one automatically.
+- `MAX_UPLOAD_BYTES`: default upload limit is `10485760`.
+- `CORS_ORIGINS`: comma-separated browser origins allowed to call the backend.
+- `ML_API_URL` and `ML_SYMPTOM_API_URL`: backend-to-ML service endpoints.
+- `API_BASE_URL`: Flutter `--dart-define` value for the backend URL.
+- `MAPS_RUNTIME_KEY`: build-time placeholder only; no real Google or AWS key belongs in committed config.
+
+## Docker
+
+Build and start the backend and ML service:
+
+```powershell
+docker compose build
+docker compose up
+```
+
+Default compose URLs:
+
+- Backend: `http://127.0.0.1:5000`
+- ML service: `http://127.0.0.1:5001`
+
+The backend container calls the ML container through `http://ml:5001`.
+
 ## Security Notes
 
 - JWT secrets should come from environment variables in production
@@ -111,6 +140,7 @@ flutter run --dart-define=API_BASE_URL=http://127.0.0.1:5000
 - The mobile map key uses `MAPS_RUNTIME_KEY` build-time indirection, so the repo does not store a real API key value
 - Auth routes and analysis routes use rate limiting
 - User input is normalized and validated before processing
+- CSRF protection is not used because the app uses bearer-token JSON APIs rather than cookie/session auth. Do not add cookie-based auth unless CSRF protection is added at the same time.
 
 ## API Endpoints
 
@@ -140,6 +170,20 @@ flutter analyze
 flutter test
 ```
 
+ML smoke checks:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s Ml_model/tests
+```
+
+Python lint:
+
+```powershell
+.\.venv\Scripts\python.exe -m ruff check backend Ml_model
+```
+
+CI runs backend tests, ML smoke tests, Python lint, `flutter analyze`, and `flutter test` through `.github/workflows/ci.yml`.
+
 ## Notes
 
 - The ML service can fall back to heuristic analysis when optional model artifacts or some ML packages are missing
@@ -147,6 +191,14 @@ flutter test
 - The admin overview endpoint is ready for future dashboard/admin UI expansion
 - Local development uses SQLite for simplicity
 - Backend runtime data now lives consistently under `backend/instance/`
+- Training writes model lifecycle metadata to `Ml_model/models/metrics.json`
+
+## Known Limitations
+
+- This is diagnosis-support software for education/demo workflows, not a replacement for clinician review.
+- Rate limiting is process-local and should be replaced with Redis or gateway-level throttling for production.
+- SQLite is suitable for local development but not the intended production database.
+- Image-only disease prediction requires a local labeled dataset and trained image artifact.
 
 ## Contributors
 

@@ -79,3 +79,43 @@ text,label
 "report notes dengue infection with thrombocytopenia, nausea, vomiting, fever and body ache",Dengue
 "patient presents with high fever, retro orbital pain, low platelets and positive dengue igg igm",Dengue
 "lab sheet indicates dengue fever, platelet drop, hematocrit rise, weakness and joint pain",Dengue
+"rt pcr positive for sars cov 2, fever, dry cough, loss of smell and oxygen saturation 94",COVID-19
+"covid antigen reactive with sore throat, dry cough, body ache and mild breathlessness",COVID-19
+"patient report notes covid infection, fever, fatigue, spo2 92 and chest congestion",COVID-19
+"sars cov 2 detected with cough, headache, loss of taste and respiratory symptoms",COVID-19
+"covid follow up shows persistent fever, dry cough, low oxygen saturation and weakness",COVID-19
+"sputum afb positive with chronic cough, night sweats, fever and weight loss",Tuberculosis
+"gene xpert detects tuberculosis with cavitary lesion, cough and hemoptysis",Tuberculosis
+"chest xray suggests pulmonary tb with weight loss, evening fever and night sweats",Tuberculosis
+"patient has chronic productive cough, afb smear positive and tuberculosis treatment advised",Tuberculosis
+"report notes tb suspected with long cough, low appetite, fever and abnormal chest imaging",Tuberculosis
+"rapid malaria antigen positive with high fever, chills, sweating and body ache",Malaria
+"blood smear shows plasmodium vivax, fever spikes, chills and severe weakness",Malaria
+"malarial parasite detected with vomiting, headache, chills and thrombocytopenia",Malaria
+"clinical report indicates malaria with intermittent fever, rigors, sweating and anemia",Malaria
+"patient has high fever after mosquito exposure, malaria test positive and fatigue",Malaria
+"widal test positive for salmonella typhi with prolonged fever and abdominal pain",Typhoid
+"blood culture suggests typhoid fever, step ladder fever, weakness and loose stool",Typhoid
+"patient report notes typhoid with headache, abdominal discomfort and sustained fever",Typhoid
+"salmonella typhi detected with fever, coated tongue, poor appetite and body ache",Typhoid
+"clinical note records enteric fever, widal reactive, abdominal pain and dehydration",Typhoid
+"urine routine shows pus cells, nitrite positive, burning urination and urinary frequency",Urinary Tract Infection
+"urine culture suggests uti with leukocyte esterase, fever and lower abdominal pain",Urinary Tract Infection
+"patient has urinary tract infection, dysuria, urgency and cloudy urine",Urinary Tract Infection
+"report notes bacteria in urine, pus cells 25, flank pain and burning micturition",Urinary Tract Infection
+"urinalysis shows nitrite positive, pyuria, frequent urination and suprapubic pain",Urinary Tract Infection
+"creatinine 2.1, urea elevated, egfr low, swelling and renal impairment noted",Kidney Disease
+"urine report shows proteinuria, high creatinine, edema and chronic kidney disease suspected",Kidney Disease
+"renal function test abnormal with raised urea, reduced egfr and reduced urine output",Kidney Disease
+"patient has kidney disease findings with protein in urine, hypertension and swelling",Kidney Disease
+"lab report notes creatinine rise, electrolyte imbalance and renal dysfunction",Kidney Disease
+"bilirubin 4.2, sgpt elevated, jaundice, dark urine and hepatitis marker reactive",Liver Disease
+"liver function test abnormal with high sgot sgpt, fatigue and yellow eyes",Liver Disease
+"patient report notes liver disease with jaundice, abdominal swelling and high bilirubin",Liver Disease
+"hepatitis suspected with elevated liver enzymes, nausea, poor appetite and dark urine",Liver Disease
+"clinical summary shows hepatomegaly, jaundice, raised bilirubin and liver inflammation",Liver Disease
+"tsh 12.4 with low t4, fatigue, weight gain and hypothyroid pattern",Thyroid Disorder
+"thyroid profile shows low tsh, high t3 t4, palpitations and weight loss",Thyroid Disorder
+"patient report notes thyroid disorder with neck swelling, heat intolerance and tremor",Thyroid Disorder
+"lab findings indicate hypothyroidism, elevated tsh, cold intolerance and constipation",Thyroid Disorder
+"thyroid function test abnormal with fatigue, menstrual changes and t4 imbalance",Thyroid Disorder

@@ -4,6 +4,8 @@ from database.db import db
 
 
 class ReportAnalysis(db.Model):
+    """Stored analysis result used for user history and admin overview."""
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     source_type = db.Column(db.String(20), nullable=False, default="report")

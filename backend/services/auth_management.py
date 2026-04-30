@@ -15,6 +15,7 @@ bcrypt = Bcrypt()
 
 
 def normalize_signup_payload(data):
+    """Normalize raw signup JSON into validated service inputs."""
     name = sanitize_text(data.get("name") or "", max_length=120)
     email = sanitize_text(data.get("email") or "", max_length=120).lower()
     password = data.get("password") or ""
@@ -22,12 +23,14 @@ def normalize_signup_payload(data):
 
 
 def normalize_login_payload(data):
+    """Normalize raw login JSON into validated service inputs."""
     email = sanitize_text(data.get("email") or "", max_length=120).lower()
     password = data.get("password") or ""
     return email, password
 
 
 def validate_signup_input(name, email, password):
+    """Return a user-facing signup validation error, or None when valid."""
     if not name or not email or not password:
         return "Name, email and password are required"
     if not is_valid_name(name):
@@ -40,6 +43,7 @@ def validate_signup_input(name, email, password):
 
 
 def validate_login_input(email, password):
+    """Return a user-facing login validation error, or None when valid."""
     if not email or not password:
         return "Email and password are required"
     if not is_valid_email(email):
@@ -48,6 +52,7 @@ def validate_login_input(email, password):
 
 
 def register_user(name, email, password):
+    """Create a user with a hashed password unless the email already exists."""
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
         return None, "User already exists"
@@ -60,6 +65,7 @@ def register_user(name, email, password):
 
 
 def authenticate_user(email, password):
+    """Check user credentials and return either the user or an auth error."""
     user = User.query.filter_by(email=email).first()
     if not user or not bcrypt.check_password_hash(user.password, password):
         return None, "Invalid email or password"
@@ -67,6 +73,7 @@ def authenticate_user(email, password):
 
 
 def build_auth_response(user):
+    """Build the public login response with a JWT access token."""
     token = create_access_token(
         identity=str(user.id),
         additional_claims={"role": user.role},
@@ -79,6 +86,7 @@ def build_auth_response(user):
 
 
 def build_signup_response(user):
+    """Build the public signup response."""
     return {
         "message": "User registered successfully",
         "user": serialize_user(user),
@@ -86,6 +94,7 @@ def build_signup_response(user):
 
 
 def serialize_user(user):
+    """Convert a user model into the public API shape."""
     return {
         "id": user.id,
         "name": user.name,

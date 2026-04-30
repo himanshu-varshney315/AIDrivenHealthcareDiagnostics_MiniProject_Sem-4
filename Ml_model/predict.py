@@ -8,6 +8,7 @@ except ImportError:  # pragma: no cover
     joblib = None
 
 from Ml_model.nlp_model.entity_extractor import EntityExtractor
+from Ml_model.utils.image_features import image_bytes_to_features
 from Ml_model.utils.preprocessing import preprocess_text
 
 
@@ -15,6 +16,7 @@ MODEL_DIR = Path(__file__).resolve().parent / "models"
 MODEL_PATHS = {
     "report": MODEL_DIR / "report_disease_classifier.joblib",
     "symptom": MODEL_DIR / "symptom_disease_classifier.joblib",
+    "image": MODEL_DIR / "image_disease_classifier.joblib",
 }
 
 
@@ -29,6 +31,14 @@ REPORT_DISEASE_KEYWORDS = {
     "Stroke": ["facial droop", "slurred speech", "arm weakness", "vision loss", "sudden dizziness", "stroke"],
     "Chikungunya": ["high fever", "joint pain", "severe joint pain", "rash", "chikungunya", "mosquito bite"],
     "Acute Diarrheal Disease": ["diarrhea", "diarrhoea", "loose stool", "vomiting", "dehydration", "oral rehydration"],
+    "COVID-19": ["covid", "sars cov 2", "rt pcr", "loss of smell", "dry cough", "oxygen saturation", "spo2"],
+    "Tuberculosis": ["tuberculosis", "tb", "afb", "gene xpert", "night sweats", "weight loss", "cavitary lesion"],
+    "Malaria": ["malaria", "plasmodium", "malarial parasite", "chills", "sweating", "rapid malaria antigen"],
+    "Typhoid": ["typhoid", "widal", "salmonella typhi", "step ladder fever", "abdominal pain", "rose spots"],
+    "Urinary Tract Infection": ["uti", "urinary tract infection", "burning urination", "pus cells", "nitrite", "leukocyte esterase"],
+    "Kidney Disease": ["creatinine", "urea", "egfr", "proteinuria", "kidney disease", "renal impairment"],
+    "Liver Disease": ["bilirubin", "sgpt", "sgot", "jaundice", "liver disease", "hepatitis"],
+    "Thyroid Disorder": ["tsh", "t3", "t4", "thyroid", "hypothyroid", "hyperthyroid"],
 }
 
 SYMPTOM_DISEASE_KEYWORDS = {
@@ -316,6 +326,150 @@ DISEASE_GUIDANCE = {
         "seek_care": "Medical care is recommended quickly if dehydration signs, bloody stool, or persistent vomiting are present.",
         "urgency": "medium",
     },
+    "COVID-19": {
+        "recommendations": [
+            "Use a clinician-approved COVID test or medical review when symptoms and exposure fit.",
+            "Rest, hydrate, and monitor fever, cough, and oxygen saturation if available.",
+            "Reduce close contact with others while fever or respiratory symptoms are active.",
+        ],
+        "precautions": [
+            "Seek urgent care for breathing trouble, chest pain, confusion, or low oxygen saturation.",
+            "Higher-risk patients should contact a clinician early about treatment options.",
+            "Do not self-start antibiotics for viral symptoms unless prescribed.",
+        ],
+        "recommended_medicines": [
+            "Acetaminophen/paracetamol may help fever if safe for you.",
+            "Prescription antivirals may be appropriate for some high-risk patients after clinician review.",
+        ],
+        "seek_care": "Medical care is recommended promptly if oxygen is low, breathing worsens, or risk factors are present.",
+        "urgency": "medium",
+    },
+    "Tuberculosis": {
+        "recommendations": [
+            "Arrange medical evaluation for cough lasting more than two weeks, weight loss, fever, or night sweats.",
+            "Confirm suspected tuberculosis with sputum testing, imaging, and clinician review.",
+            "Avoid close prolonged exposure to others until infectious risk is assessed.",
+        ],
+        "precautions": [
+            "Do not delay care if coughing blood, severe weakness, or breathlessness appears.",
+            "Do not start or stop tuberculosis medicines without a supervised treatment plan.",
+            "Follow public health guidance if TB is confirmed.",
+        ],
+        "recommended_medicines": [
+            "TB treatment requires prescription multi-drug therapy supervised by a clinician.",
+            "Avoid partial or irregular TB treatment because resistance can develop.",
+        ],
+        "seek_care": "Prompt clinician review is recommended for suspected tuberculosis symptoms or positive TB tests.",
+        "urgency": "medium",
+    },
+    "Malaria": {
+        "recommendations": [
+            "Seek testing quickly when fever with chills occurs after mosquito exposure or travel to a malaria area.",
+            "Hydrate and monitor fever pattern, weakness, vomiting, and confusion.",
+            "Use mosquito-bite prevention to reduce further exposure.",
+        ],
+        "precautions": [
+            "Urgent care is needed for confusion, severe weakness, persistent vomiting, jaundice, or very high fever.",
+            "Do not delay antimalarial treatment if malaria is confirmed by a clinician.",
+            "Children, pregnancy, and older age increase risk and need early review.",
+        ],
+        "recommended_medicines": [
+            "Antimalarial medicine choice depends on test result, region, pregnancy status, and clinician advice.",
+            "Acetaminophen/paracetamol may help fever if safe for you.",
+        ],
+        "seek_care": "Same-day medical testing and review is recommended for suspected malaria.",
+        "urgency": "high",
+    },
+    "Typhoid": {
+        "recommendations": [
+            "Get medical review for prolonged fever with abdominal symptoms or positive Widal/blood culture findings.",
+            "Maintain fluids and light foods as tolerated.",
+            "Use safe water and hand hygiene to reduce spread.",
+        ],
+        "precautions": [
+            "Seek urgent care for persistent vomiting, severe abdominal pain, confusion, or dehydration.",
+            "Do not self-start antibiotics without clinician advice and appropriate testing.",
+            "Follow up if fever persists despite treatment.",
+        ],
+        "recommended_medicines": [
+            "Typhoid usually needs prescription antibiotics chosen by a clinician.",
+            "Oral rehydration solution may help if diarrhea or poor intake is present.",
+        ],
+        "seek_care": "Medical review is recommended for sustained fever or positive typhoid-related tests.",
+        "urgency": "medium",
+    },
+    "Urinary Tract Infection": {
+        "recommendations": [
+            "Arrange urine testing or clinician review for burning urination, frequency, fever, or abnormal urine findings.",
+            "Drink fluids unless a clinician has restricted fluid intake.",
+            "Note fever, flank pain, pregnancy, or recurrent infections because they change urgency.",
+        ],
+        "precautions": [
+            "Seek urgent care for fever with back/flank pain, vomiting, pregnancy, or confusion.",
+            "Do not use leftover antibiotics because wrong treatment can worsen resistance.",
+            "Persistent symptoms after treatment need follow-up testing.",
+        ],
+        "recommended_medicines": [
+            "Antibiotics should be selected by a clinician based on symptoms and urine findings.",
+            "Simple pain or fever relief may be used only if safe for you.",
+        ],
+        "seek_care": "Clinician review is advised, especially with fever, flank pain, pregnancy, or recurrent symptoms.",
+        "urgency": "medium",
+    },
+    "Kidney Disease": {
+        "recommendations": [
+            "Review abnormal creatinine, urea, eGFR, swelling, or urine protein findings with a clinician.",
+            "Track blood pressure, urine changes, swelling, and diabetes status if relevant.",
+            "Avoid dehydration and ask before using medicines that can affect kidneys.",
+        ],
+        "precautions": [
+            "Seek urgent care for very low urine output, severe swelling, confusion, or breathlessness.",
+            "Avoid frequent NSAID painkillers unless a clinician says they are safe for you.",
+            "Do not ignore rising creatinine or falling eGFR on repeat tests.",
+        ],
+        "recommended_medicines": [
+            "Kidney-related medicines depend on the cause and lab values and need clinician supervision.",
+            "Avoid self-medicating with painkillers or supplements when kidney tests are abnormal.",
+        ],
+        "seek_care": "Medical review is recommended for abnormal kidney function tests or swelling with urine changes.",
+        "urgency": "medium",
+    },
+    "Liver Disease": {
+        "recommendations": [
+            "Review jaundice, high bilirubin, high SGPT/SGOT, or hepatitis markers with a clinician.",
+            "Avoid alcohol while liver inflammation or jaundice is being evaluated.",
+            "Track dark urine, pale stool, abdominal swelling, and worsening fatigue.",
+        ],
+        "precautions": [
+            "Seek urgent care for confusion, bleeding, severe abdominal swelling, or deepening jaundice.",
+            "Avoid unnecessary medicines or supplements that can stress the liver.",
+            "Hepatitis-related findings need appropriate testing and follow-up.",
+        ],
+        "recommended_medicines": [
+            "Treatment depends on the liver disease cause and should be clinician-directed.",
+            "Avoid self-starting herbal or high-dose medicines when liver tests are abnormal.",
+        ],
+        "seek_care": "Clinician review is recommended for jaundice, high liver enzymes, or hepatitis markers.",
+        "urgency": "medium",
+    },
+    "Thyroid Disorder": {
+        "recommendations": [
+            "Review abnormal TSH, T3, or T4 results with a clinician for thyroid-specific treatment.",
+            "Track weight change, palpitations, fatigue, cold or heat intolerance, and neck swelling.",
+            "Repeat testing may be needed before long-term treatment decisions.",
+        ],
+        "precautions": [
+            "Seek urgent care for severe palpitations, chest pain, confusion, or extreme weakness.",
+            "Do not change thyroid medicine doses without medical advice.",
+            "Pregnancy or heart disease makes thyroid abnormalities more urgent to review.",
+        ],
+        "recommended_medicines": [
+            "Thyroid medicines require prescription dosing based on lab values and clinical context.",
+            "Do not self-start thyroid hormone or antithyroid medicine.",
+        ],
+        "seek_care": "Medical review is recommended for abnormal thyroid tests or persistent thyroid-related symptoms.",
+        "urgency": "low",
+    },
 }
 
 RED_FLAG_TERMS = {
@@ -336,6 +490,10 @@ RED_FLAG_TERMS = {
     "wheezing at rest",
     "cannot breathe",
     "severe dehydration",
+    "coughing blood",
+    "low oxygen",
+    "flank pain",
+    "deepening jaundice",
 }
 
 SYMPTOM_SAFETY_PRIORS = {
@@ -354,9 +512,17 @@ SYMPTOM_SAFETY_PRIORS = {
     "Asthma": 0.9,
     "Chikungunya": 0.88,
     "Acute Diarrheal Disease": 0.98,
+    "COVID-19": 0.92,
+    "Tuberculosis": 0.86,
+    "Malaria": 0.84,
+    "Typhoid": 0.9,
+    "Urinary Tract Infection": 1.0,
+    "Kidney Disease": 0.88,
+    "Liver Disease": 0.88,
+    "Thyroid Disorder": 1.05,
 }
 
-SEVERE_DISEASES = {"Pneumonia", "Heart Disease", "Dengue", "Stroke"}
+SEVERE_DISEASES = {"Pneumonia", "Heart Disease", "Dengue", "Stroke", "Malaria"}
 COMMON_MILD_DISEASES = {"Common Cold", "Influenza", "Allergic Rhinitis"}
 SEVERE_SUPPORT_TERMS = {
     "Pneumonia": {"shortness of breath", "breathing difficulty", "low oxygen", "spo2", "chest congestion", "sputum"},
@@ -384,7 +550,7 @@ class HeuristicPredictor:
         return predicted, max(raw_confidence, normalized_scores[predicted]), normalized_scores
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=3)
 def _load_artifact(task: str) -> dict | None:
     if joblib is None:
         return None
@@ -403,8 +569,89 @@ def analyze_medical_report_text(text: str) -> Dict[str, object]:
     return _analyze_text(text, task="report")
 
 
+def analyze_medical_image_file_bytes(file_bytes: bytes, extracted_text: str = "") -> Dict[str, object]:
+    text_result = analyze_medical_report_text(extracted_text) if extracted_text.strip() else None
+    image_result = _analyze_image(file_bytes)
+    if image_result is None:
+        if text_result is not None:
+            return text_result
+        return {
+            "task": "image",
+            "prediction": "Unknown",
+            "confidence": 0.0,
+            "extracted_symptoms": [],
+            "entities": {"symptoms": [], "diseases": [], "medications": [], "lab_values": []},
+            "explanation": "No image disease model is trained yet and no readable report text was extracted.",
+            "probabilities": {},
+            "recommendations": [
+                "Add labeled image training data and run the image training command before relying on image-only prediction.",
+                "Use a clearer report image or upload a PDF/TXT version when available.",
+            ],
+            "precautions": [
+                "Do not rely on this output for diagnosis because image-only prediction is not available yet.",
+                "Seek clinician review for concerning symptoms or abnormal report findings.",
+            ],
+            "recommended_medicines": [
+                "Medicine decisions need clinician advice and the full report context.",
+            ],
+            "seek_care": "Use clinician review if symptoms or report findings are concerning.",
+            "urgency": "medium",
+        }
+
+    if text_result is None or image_result["confidence"] >= text_result["confidence"]:
+        return image_result
+
+    text_result["image_prediction"] = {
+        "prediction": image_result["prediction"],
+        "confidence": image_result["confidence"],
+        "probabilities": image_result["probabilities"],
+    }
+    return text_result
+
+
 def analyze_symptom_text(text: str) -> Dict[str, object]:
     return _analyze_text(text, task="symptom")
+
+
+def _analyze_image(file_bytes: bytes) -> Dict[str, object] | None:
+    artifact = _load_artifact("image")
+    if artifact is None:
+        return None
+
+    features = image_bytes_to_features(file_bytes)
+    pipeline = artifact["pipeline"]
+    probability_matrix = pipeline.predict_proba([features])[0]
+    labels = pipeline.classes_
+    ranked_probabilities = sorted(
+        ((label, float(score)) for label, score in zip(labels, probability_matrix)),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    predicted_label = ranked_probabilities[0][0]
+    confidence = ranked_probabilities[0][1]
+    probabilities = {
+        label: round(score, 4)
+        for label, score in ranked_probabilities
+    }
+    guidance = _build_guidance(predicted_label, "", task="image")
+
+    return {
+        "task": "image",
+        "prediction": predicted_label,
+        "confidence": round(float(confidence), 4),
+        "extracted_symptoms": [],
+        "entities": {"symptoms": [], "diseases": [], "medications": [], "lab_values": []},
+        "explanation": (
+            f"The image model suggests {predicted_label} with "
+            f"{round(confidence * 100, 1)}% confidence from visual features."
+        ),
+        "probabilities": probabilities,
+        "recommendations": guidance["recommendations"],
+        "precautions": guidance["precautions"],
+        "recommended_medicines": guidance["recommended_medicines"],
+        "seek_care": guidance["seek_care"],
+        "urgency": guidance["urgency"],
+    }
 
 
 def _analyze_text(text: str, task: str) -> Dict[str, object]:

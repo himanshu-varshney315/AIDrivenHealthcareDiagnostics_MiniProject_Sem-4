@@ -1,6 +1,8 @@
 import json
+import os
 import uuid
 from urllib import error, request as urllib_request
+
 from werkzeug.utils import secure_filename
 
 from database.db import db
@@ -8,13 +10,14 @@ from models.report_analysis_model import ReportAnalysis
 from models.user_model import User
 
 
-ML_API_URL = "http://127.0.0.1:5001/analyze-report"
-ML_SYMPTOM_API_URL = "http://127.0.0.1:5001/analyze-symptoms"
+DEFAULT_ML_API_URL = "http://127.0.0.1:5001/analyze-report"
+DEFAULT_ML_SYMPTOM_API_URL = "http://127.0.0.1:5001/analyze-symptoms"
 MAX_REPORT_BYTES = 10 * 1024 * 1024
 SUPPORTED_REPORT_EXTENSIONS = {"pdf", "txt", "png", "jpg", "jpeg"}
 
 
 def validate_uploaded_report(uploaded_file):
+    """Validate an uploaded report file and return its bytes when accepted."""
     if uploaded_file is None:
         return "No file uploaded", None
     if uploaded_file.filename == "":
@@ -32,6 +35,7 @@ def validate_uploaded_report(uploaded_file):
 
 
 def analyze_uploaded_report(user_id, uploaded_file):
+    """Analyze a report upload, persist the normalized result, and add trend context."""
     validation_error, file_bytes = validate_uploaded_report(uploaded_file)
     if validation_error:
         return None, validation_error, 400
@@ -42,6 +46,7 @@ def analyze_uploaded_report(user_id, uploaded_file):
         filename=safe_filename,
         content_type=uploaded_file.mimetype or "application/pdf",
     )
+    result = normalize_analysis_result(result)
     save_analysis_record(
         user_id=user_id,
         source_type="report",
@@ -55,7 +60,9 @@ def analyze_uploaded_report(user_id, uploaded_file):
 
 
 def analyze_symptom_entry(user_id, symptoms_text):
+    """Analyze typed symptoms, persist the normalized result, and add trend context."""
     result = forward_symptoms_to_ml_api(symptoms_text)
+    result = normalize_analysis_result(result)
     save_analysis_record(
         user_id=user_id,
         source_type="symptom",
@@ -69,6 +76,7 @@ def analyze_symptom_entry(user_id, symptoms_text):
 
 
 def get_report_history(user_id, limit):
+    """Return recent analyses for one user with a trend summary."""
     records = (
         ReportAnalysis.query.filter_by(user_id=user_id)
         .order_by(ReportAnalysis.created_at.desc())
@@ -82,6 +90,7 @@ def get_report_history(user_id, limit):
 
 
 def get_admin_overview(limit):
+    """Return aggregate analysis data for an administrator dashboard."""
     records = (
         ReportAnalysis.query.order_by(ReportAnalysis.created_at.desc())
         .limit(limit)
@@ -119,11 +128,12 @@ def get_admin_overview(limit):
 
 
 def forward_report_to_ml_api(file_bytes, filename, content_type):
+    """Forward a report file to the configured ML report endpoint."""
     boundary = f"----MiniBoundary{uuid.uuid4().hex}"
     body = build_multipart_body(boundary, file_bytes, filename, content_type)
 
     outgoing_request = urllib_request.Request(
-        ML_API_URL,
+        get_ml_api_url(),
         data=body,
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
         method="POST",
@@ -132,9 +142,10 @@ def forward_report_to_ml_api(file_bytes, filename, content_type):
 
 
 def forward_symptoms_to_ml_api(symptoms_text):
+    """Forward symptom text to the configured ML symptom endpoint."""
     body = json.dumps({"symptoms_text": symptoms_text}).encode("utf-8")
     outgoing_request = urllib_request.Request(
-        ML_SYMPTOM_API_URL,
+        get_ml_symptom_api_url(),
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -143,6 +154,7 @@ def forward_symptoms_to_ml_api(symptoms_text):
 
 
 def build_multipart_body(boundary, file_bytes, filename, content_type):
+    """Build a minimal multipart body without adding an HTTP client dependency."""
     boundary_bytes = boundary.encode("utf-8")
     parts = [
         b"--" + boundary_bytes,
@@ -157,6 +169,7 @@ def build_multipart_body(boundary, file_bytes, filename, content_type):
 
 
 def save_analysis_record(user_id, source_type, source_name, analysis_result):
+    """Persist the stable subset of an analysis response used for history views."""
     record = ReportAnalysis(
         user_id=user_id,
         source_type=source_type,
@@ -179,6 +192,7 @@ def save_analysis_record(user_id, source_type, source_name, analysis_result):
 
 
 def serialize_analysis(record):
+    """Convert a stored analysis record into the public history response shape."""
     return {
         "id": record.id,
         "source_type": record.source_type,
@@ -187,14 +201,25 @@ def serialize_analysis(record):
         "confidence": round(float(record.confidence), 4),
         "urgency": record.urgency,
         "extracted_symptoms": json.loads(record.extracted_symptoms_json or "[]"),
+        "entities": {
+            "symptoms": json.loads(record.extracted_symptoms_json or "[]"),
+            "diseases": [],
+            "medications": [],
+            "lab_values": [],
+        },
+        "probabilities": {},
         "recommendations": json.loads(record.recommendations_json or "[]"),
         "precautions": json.loads(record.precautions_json or "[]"),
+        "seek_care": "",
+        "recommended_medicines": [],
         "explanation": record.explanation,
+        "trend_summary": None,
         "created_at": record.created_at.isoformat(),
     }
 
 
 def build_trend_summary(user_id, records=None):
+    """Summarize recent analysis direction and urgency for a user."""
     analyses = records or (
         ReportAnalysis.query.filter_by(user_id=user_id)
         .order_by(ReportAnalysis.created_at.desc())
@@ -263,7 +288,42 @@ def build_trend_summary(user_id, records=None):
 
 
 def urgency_rank(urgency):
+    """Convert urgency labels into comparable numeric ranks."""
     return {"low": 1, "medium": 2, "high": 3}.get((urgency or "").lower(), 2)
+
+
+def normalize_analysis_result(result):
+    """Fill optional ML fields so Flutter can render one predictable result contract."""
+    normalized = dict(result or {})
+    normalized["prediction"] = str(normalized.get("prediction") or "Unknown")
+    normalized["confidence"] = round(float(normalized.get("confidence") or 0.0), 4)
+    normalized["urgency"] = str(normalized.get("urgency") or "medium").lower()
+    normalized["explanation"] = str(normalized.get("explanation") or "")
+    normalized["extracted_symptoms"] = list(normalized.get("extracted_symptoms") or [])
+    normalized["entities"] = normalized.get("entities") or {
+        "symptoms": normalized["extracted_symptoms"],
+        "diseases": [],
+        "medications": [],
+        "lab_values": [],
+    }
+    normalized["probabilities"] = normalized.get("probabilities") or {}
+    normalized["recommendations"] = list(normalized.get("recommendations") or [])
+    normalized["precautions"] = list(normalized.get("precautions") or [])
+    normalized["recommended_medicines"] = list(normalized.get("recommended_medicines") or [])
+    normalized["seek_care"] = str(normalized.get("seek_care") or "")
+    normalized.setdefault("trend_summary", None)
+    return normalized
+
+
+def get_ml_api_url():
+    """Return the report-analysis ML URL from env or the local development default."""
+    return os.environ.get("ML_API_URL", DEFAULT_ML_API_URL).strip() or DEFAULT_ML_API_URL
+
+
+def get_ml_symptom_api_url():
+    """Return the symptom-analysis ML URL from env or the local development default."""
+    configured = os.environ.get("ML_SYMPTOM_API_URL", DEFAULT_ML_SYMPTOM_API_URL)
+    return configured.strip() or DEFAULT_ML_SYMPTOM_API_URL
 
 
 def _send_request(outgoing_request):
@@ -277,7 +337,7 @@ def _send_request(outgoing_request):
         ) from exc
     except error.URLError as exc:
         raise RuntimeError(
-            "Could not reach ML API on http://127.0.0.1:5001. Start it with: python -m Ml_model.app"
+            "Could not reach ML API. Start it with: python -m Ml_model.app"
         ) from exc
 
     return json.loads(payload)

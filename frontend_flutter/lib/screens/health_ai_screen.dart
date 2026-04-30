@@ -387,6 +387,16 @@ class _AdviceCard extends StatelessWidget {
             advice.recommendation,
             style: const TextStyle(color: AppTheme.textMuted, height: 1.45),
           ),
+          if (advice.extractedSymptoms.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: advice.extractedSymptoms
+                  .map((item) => _MiniBadge(item, AppTheme.blue))
+                  .toList(),
+            ),
+          ],
           if (advice.probabilities.isNotEmpty) ...[
             const SizedBox(height: 12),
             ...advice.probabilities
@@ -427,6 +437,23 @@ class _AdviceCard extends StatelessWidget {
                 height: 1.35,
               ),
             ),
+          ],
+          if (advice.precautions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...advice.precautions
+                .take(2)
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: AppTheme.textMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ),
           ],
         ],
       ),
@@ -478,6 +505,8 @@ class _Advice {
   final String urgency;
   final String recommendation;
   final String seekCare;
+  final List<String> extractedSymptoms;
+  final List<String> precautions;
   final List<MapEntry<String, double>> probabilities;
 
   const _Advice({
@@ -487,6 +516,8 @@ class _Advice {
     required this.urgency,
     required this.recommendation,
     required this.seekCare,
+    required this.extractedSymptoms,
+    required this.precautions,
     required this.probabilities,
   });
 
@@ -500,6 +531,8 @@ class _Advice {
         urgency: 'medium',
         recommendation: 'Try again with clearer symptom details.',
         seekCare: 'Use urgent care for severe or worsening symptoms.',
+        extractedSymptoms: const [],
+        precautions: const [],
         probabilities: const [],
       );
     }
@@ -515,6 +548,13 @@ class _Advice {
             )
             .toList()
           ..sort((a, b) => b.value.compareTo(a.value));
+    final extractedSymptoms =
+        (response['extracted_symptoms'] as List<dynamic>? ?? const [])
+            .map((item) => item.toString())
+            .toList();
+    final precautions = (response['precautions'] as List<dynamic>? ?? const [])
+        .map((item) => item.toString())
+        .toList();
 
     return _Advice(
       summary:
@@ -527,6 +567,8 @@ class _Advice {
           ? 'Track symptoms and arrange medical review if they continue.'
           : recommendations.first,
       seekCare: response['seek_care']?.toString() ?? '',
+      extractedSymptoms: extractedSymptoms,
+      precautions: precautions,
       probabilities: probabilities,
     );
   }

@@ -6,23 +6,25 @@ import 'package:flutter/material.dart';
 import '../config/app_identity.dart';
 import '../services/auth_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/brand_mark.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
 const List<_SplashSlide> _slides = [
   _SplashSlide(
     title: 'Upload reports',
-    subtitle: 'Store PDFs and lab results in one clean place.',
+    subtitle: 'Keep PDFs and lab results organized in one calm health record.',
     highlight: 'Fast setup',
   ),
   _SplashSlide(
     title: 'Track patterns',
-    subtitle: 'Spot changes and review AI summaries quickly.',
+    subtitle: 'Review AI summaries and spot changes without extra noise.',
     highlight: 'Smart analysis',
   ),
   _SplashSlide(
     title: 'Find care faster',
-    subtitle: 'Move from reports to nearby clinics with less effort.',
+    subtitle:
+        'Move from reports to nearby clinics and follow-up with less effort.',
     highlight: 'Clinic support',
   ),
 ];
@@ -168,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFCFF),
+      backgroundColor: AppTheme.background,
       body: AnimatedBuilder(
         animation: Listenable.merge([_sequenceController, _floatController]),
         builder: (context, child) {
@@ -221,20 +223,20 @@ class _Backdrop extends StatelessWidget {
     return Stack(
       children: [
         Container(color: const Color(0xFFFCFCFF)),
-        const Positioned(
-          top: -90,
-          left: -50,
-          child: _GlowOrb(size: 220, color: Color(0x403B82F6)),
-        ),
-        const Positioned(
-          top: 150,
-          right: -50,
-          child: _GlowOrb(size: 220, color: Color(0x3359C7D8)),
-        ),
-        const Positioned(
-          bottom: 140,
-          left: -60,
-          child: _GlowOrb(size: 180, color: Color(0x30FFD4B6)),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.scrub.withValues(alpha: 0.65),
+                  AppTheme.background,
+                  Colors.white,
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -253,32 +255,13 @@ class _BrandIntro extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  color: AppTheme.navy,
-                  borderRadius: BorderRadius.circular(34),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.navy.withValues(alpha: 0.14),
-                      blurRadius: 30,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
+              const AyuvaBrandMark(size: 104),
               const SizedBox(height: 24),
               Text(
                 AppIdentity.appName,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: 50,
-                  letterSpacing: -1.6,
+                  letterSpacing: 0,
                   color: AppTheme.navy,
                 ),
               ),
@@ -468,7 +451,7 @@ class _IllustrationStage extends StatelessWidget {
           child: _BlobCharacter(
             width: 82,
             height: 74,
-            color: const Color(0xFFFFB000),
+            color: AppTheme.aqua,
             shape: BlobShape.chatFlower,
             eyeOffset: const Offset(-1, 0),
             rotation: 0.08,
@@ -480,7 +463,7 @@ class _IllustrationStage extends StatelessWidget {
           child: _BlobCharacter(
             width: 86,
             height: 92,
-            color: const Color(0xFFFF584A),
+            color: AppTheme.clinicalGreen,
             shape: BlobShape.droplet,
             eyeOffset: const Offset(0, -2),
             rotation: -0.1,
@@ -489,17 +472,17 @@ class _IllustrationStage extends StatelessWidget {
         Positioned(
           left: 148 + (cosine * 6),
           top: 54 + (sine * 4),
-          child: _MiniBlob(color: const Color(0xFF3F73F4)),
+          child: _MiniBlob(color: AppTheme.blue),
         ),
         Positioned(
           left: 30 + (cosine * 6),
           top: 128 - (sine * 4),
-          child: _MiniBlob(color: const Color(0xFF3F73F4), size: 22),
+          child: _MiniBlob(color: AppTheme.aqua, size: 22),
         ),
         Positioned(
           left: 112 - (cosine * 4),
           bottom: 82 + (sine * 5),
-          child: _MiniBlob(color: const Color(0xFFFF584A), size: 20),
+          child: _MiniBlob(color: AppTheme.clinicalGreen, size: 20),
         ),
         Positioned(
           right: 114,
@@ -508,7 +491,7 @@ class _IllustrationStage extends StatelessWidget {
             width: 74,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF2FF),
+              color: AppTheme.scrub,
               borderRadius: BorderRadius.circular(14),
               boxShadow: const [
                 BoxShadow(
@@ -521,7 +504,7 @@ class _IllustrationStage extends StatelessWidget {
             child: const Center(
               child: Icon(
                 Icons.smartphone_rounded,
-                color: AppTheme.navy,
+                color: AppTheme.clinicalGreen,
                 size: 22,
               ),
             ),
@@ -536,7 +519,7 @@ class _IllustrationStage extends StatelessWidget {
               width: 110,
               height: 20,
               decoration: BoxDecoration(
-                color: const Color(0xFFE6EDFA),
+                color: AppTheme.backgroundRaised,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -588,7 +571,7 @@ class _LowerPanel extends StatelessWidget {
               shortScreen ? 10 : (compact ? 16 : 22),
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFFF1F5FD),
+              color: AppTheme.softSurface,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -722,7 +705,7 @@ class _CloudBump extends StatelessWidget {
       child: Container(
         height: height,
         decoration: const BoxDecoration(
-          color: Color(0xFFF1F5FD),
+          color: AppTheme.softSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
@@ -887,26 +870,5 @@ class _BlobPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BlobPainter oldDelegate) {
     return oldDelegate.color != color || oldDelegate.shape != shape;
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _GlowOrb({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-        ),
-      ),
-    );
   }
 }

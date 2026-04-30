@@ -85,13 +85,12 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      icon: Icons.add_reaction_rounded,
       eyebrow: 'Start ${AppIdentity.appName}',
-      title: 'Create your personal care space',
+      title: 'Create your Ayuva care space',
       subtitle: AppIdentity.appShortDescription,
       stats: const [
-        AuthStat(label: 'Reports', value: '5 types', tint: AppTheme.blue),
-        AuthStat(label: 'Alerts', value: 'Live', tint: AppTheme.coral),
+        AuthStat(label: 'Reports', value: '5 types', tint: AppTheme.aqua),
+        AuthStat(label: 'Alerts', value: 'Live', tint: AppTheme.amber),
       ],
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -116,7 +115,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Set up your details and start using the app.',
+              'Set up your details and begin building a calmer health record.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
@@ -215,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: 18),
             if (_statusMessage != null) ...[
-              _AuthStatusBanner(message: _statusMessage!),
+              AuthStatusBanner(message: _statusMessage!),
               const SizedBox(height: 12),
             ],
             SizedBox(
@@ -224,7 +223,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 onPressed: isLoading ? null : signupUser,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(58),
-                  backgroundColor: AppTheme.blue,
+                  backgroundColor: AppTheme.clinicalGreen,
                 ),
                 child: isLoading
                     ? const SizedBox(
@@ -277,39 +276,6 @@ class _SignupScreenState extends State<SignupScreen> {
       labelText: label,
       hintText: hint,
       prefixIcon: Icon(icon),
-    );
-  }
-}
-
-class _AuthStatusBanner extends StatelessWidget {
-  final String message;
-
-  const _AuthStatusBanner({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF7FF),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline_rounded, color: AppTheme.blue),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

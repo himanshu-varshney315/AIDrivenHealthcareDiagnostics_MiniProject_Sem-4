@@ -13,6 +13,7 @@ from database.db import db
 from models.report_analysis_model import ReportAnalysis
 from models.user_model import User
 from services.auth_management import bcrypt
+from services.security import rate_limiter, sanitize_text
 
 
 class ApiTestCase(unittest.TestCase):
@@ -29,6 +30,7 @@ class ApiTestCase(unittest.TestCase):
         with self.app.app_context():
             db.drop_all()
             db.create_all()
+        rate_limiter.reset()
 
     def tearDown(self):
         with self.app.app_context():
@@ -57,6 +59,52 @@ class ApiTestCase(unittest.TestCase):
         )
         self.assertEqual(login_response.status_code, 200)
         self.assertIn("token", login_response.get_json())
+
+    def test_signup_validation_and_duplicate_email(self):
+        missing_response = self.client.post("/signup", json={"email": "bad"})
+        self.assertEqual(missing_response.status_code, 400)
+        self.assertEqual(
+            missing_response.get_json()["message"],
+            "Name, email and password are required",
+        )
+
+        signup_response = self.client.post(
+            "/signup",
+            json={
+                "name": "Duplicate User",
+                "email": "duplicate@example.com",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(signup_response.status_code, 200)
+
+        duplicate_response = self.client.post(
+            "/signup",
+            json={
+                "name": "Duplicate User",
+                "email": "duplicate@example.com",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(duplicate_response.status_code, 400)
+        self.assertEqual(duplicate_response.get_json()["message"], "User already exists")
+
+    def test_login_validation_and_invalid_credentials(self):
+        invalid_email_response = self.client.post(
+            "/login",
+            json={"email": "not-an-email", "password": "password123"},
+        )
+        self.assertEqual(invalid_email_response.status_code, 400)
+
+        invalid_credentials_response = self.client.post(
+            "/login",
+            json={"email": "missing@example.com", "password": "password123"},
+        )
+        self.assertEqual(invalid_credentials_response.status_code, 401)
+        self.assertEqual(
+            invalid_credentials_response.get_json()["message"],
+            "Invalid email or password",
+        )
 
     @patch("routes.report_routes.analyze_symptom_entry")
     def test_symptom_analysis_requires_valid_token_and_returns_payload(
@@ -120,6 +168,47 @@ class ApiTestCase(unittest.TestCase):
             "Invalid authentication token.",
         )
 
+    def test_security_headers_are_present(self):
+        response = self.client.get("/reports/history")
+
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+
+    def test_sanitize_text_removes_markup_characters(self):
+        cleaned = sanitize_text("  <script>alert(1)</script> fever  ", max_length=120)
+
+        self.assertNotIn("<", cleaned)
+        self.assertNotIn(">", cleaned)
+        self.assertIn("script", cleaned)
+
+    @patch.dict("os.environ", {"CORS_ORIGINS": "http://allowed.example"}, clear=False)
+    def test_cors_allowlist_uses_configured_origin(self):
+        app = create_app(
+            {
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+                "JWT_SECRET_KEY": "test-secret-key-with-at-least-32-bytes",
+            }
+        )
+        client = app.test_client()
+
+        response = client.options(
+            "/login",
+            headers={
+                "Origin": "http://allowed.example",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], "http://allowed.example")
+
+        with app.app_context():
+            db.session.remove()
+            db.drop_all()
+            db.engine.dispose()
+
     @patch("services.report_analysis_service.forward_report_to_ml_api")
     def test_report_upload_accepts_plain_text_report(self, mock_forward_report):
         mock_forward_report.return_value = {
@@ -160,7 +249,99 @@ class ApiTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["prediction"], "Anemia")
+        self.assertIn("seek_care", response.get_json())
+        self.assertIn("probabilities", response.get_json())
         mock_forward_report.assert_called_once()
+
+    def test_report_upload_validation_failures(self):
+        self.client.post(
+            "/signup",
+            json={
+                "name": "Upload User",
+                "email": "upload-validation@example.com",
+                "password": "password123",
+            },
+        )
+        login_response = self.client.post(
+            "/login",
+            json={"email": "upload-validation@example.com", "password": "password123"},
+        )
+        token = login_response.get_json()["token"]
+
+        missing_file_response = self.client.post(
+            "/upload-report",
+            data={},
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(missing_file_response.status_code, 400)
+        self.assertEqual(missing_file_response.get_json()["message"], "No file uploaded")
+
+        unsupported_file_response = self.client.post(
+            "/upload-report",
+            data={"file": (io.BytesIO(b"fake"), "report.exe")},
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(unsupported_file_response.status_code, 400)
+        self.assertIn("Only PDF", unsupported_file_response.get_json()["message"])
+
+    def test_upload_limit_error_handler(self):
+        app = create_app(
+            {
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+                "JWT_SECRET_KEY": "test-secret-key-with-at-least-32-bytes",
+            }
+        )
+        client = app.test_client()
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+
+        client.post(
+            "/signup",
+            json={
+                "name": "Small Limit",
+                "email": "limit@example.com",
+                "password": "password123",
+            },
+        )
+        token = client.post(
+            "/login",
+            json={"email": "limit@example.com", "password": "password123"},
+        ).get_json()["token"]
+        app.config["MAX_CONTENT_LENGTH"] = 8
+
+        response = client.post(
+            "/upload-report",
+            data={"file": (io.BytesIO(b"larger than eight bytes"), "report.txt")},
+            headers={"Authorization": f"Bearer {token}"},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 413)
+
+        with app.app_context():
+            db.session.remove()
+            db.drop_all()
+            db.engine.dispose()
+
+    def test_login_rate_limit(self):
+        for _index in range(8):
+            response = self.client.post(
+                "/login",
+                json={"email": "rate@example.com", "password": "password123"},
+                headers={"X-Forwarded-For": "203.0.113.10"},
+            )
+            self.assertEqual(response.status_code, 401)
+
+        limited_response = self.client.post(
+            "/login",
+            json={"email": "rate@example.com", "password": "password123"},
+            headers={"X-Forwarded-For": "203.0.113.10"},
+        )
+        self.assertEqual(limited_response.status_code, 429)
 
     def test_reports_overview_requires_admin_role(self):
         with self.app.app_context():
@@ -224,6 +405,52 @@ class ApiTestCase(unittest.TestCase):
         payload = allowed_response.get_json()
         self.assertEqual(payload["summary"]["total_analyses"], 1)
         self.assertEqual(payload["summary"]["high_urgency_count"], 1)
+
+    def test_report_history_serializes_normalized_shape(self):
+        with self.app.app_context():
+            hashed_password = bcrypt.generate_password_hash("password123").decode(
+                "utf-8"
+            )
+            user = User(
+                name="History User",
+                email="history@example.com",
+                password=hashed_password,
+                role="user",
+            )
+            db.session.add(user)
+            db.session.commit()
+            db.session.add(
+                ReportAnalysis(
+                    user_id=user.id,
+                    source_type="symptom",
+                    source_name="Symptom Chat",
+                    prediction="Influenza",
+                    confidence=0.65,
+                    urgency="medium",
+                    extracted_symptoms_json='["fever"]',
+                    recommendations_json='["Rest"]',
+                    precautions_json='["Monitor breathing"]',
+                    explanation="Flu-like symptoms detected.",
+                )
+            )
+            db.session.commit()
+
+        token = self.client.post(
+            "/login",
+            json={"email": "history@example.com", "password": "password123"},
+        ).get_json()["token"]
+        response = self.client.get(
+            "/reports/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        item = response.get_json()["history"][0]
+        self.assertEqual(item["prediction"], "Influenza")
+        self.assertEqual(item["extracted_symptoms"], ["fever"])
+        self.assertIn("entities", item)
+        self.assertIn("probabilities", item)
+        self.assertIn("seek_care", item)
 
     @patch.dict("os.environ", {"FLASK_ENV": "production"}, clear=False)
     def test_create_app_accepts_test_secret_in_production_environment(self):

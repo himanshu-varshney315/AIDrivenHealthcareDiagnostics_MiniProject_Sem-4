@@ -25,7 +25,9 @@ void main() {
 
     expect(find.text('Sign in'), findsWidgets);
     expect(
-      find.text('Continue to reports, symptom guidance, and nearby care.'),
+      find.text(
+        'Continue to your reports, symptom guidance, and care history.',
+      ),
       findsOneWidget,
     );
   });

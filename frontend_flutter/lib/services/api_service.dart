@@ -51,9 +51,9 @@ class ApiService {
 
       return _decodeResponse(response);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
-      return _networkError("Request timed out. Backend may be down.");
+      return _timeoutError();
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
@@ -75,9 +75,9 @@ class ApiService {
 
       return _decodeResponse(response);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
-      return _networkError("Request timed out. Backend may be down.");
+      return _timeoutError();
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
@@ -115,7 +115,7 @@ class ApiService {
         } catch (_) {}
 
         return {
-          "message": message,
+          "message": _friendlyMessage(response.statusCode, message),
           "status_code": response.statusCode,
           "body": responseData,
         };
@@ -123,7 +123,7 @@ class ApiService {
 
       return jsonDecode(responseData);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
       return _networkError("Upload timed out. Try a smaller file.");
     } on HttpException catch (e) {
@@ -151,9 +151,9 @@ class ApiService {
       );
       return _decodeResponse(response);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
-      return _networkError("Request timed out. Backend may be down.");
+      return _timeoutError();
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
@@ -178,9 +178,9 @@ class ApiService {
       );
       return _decodeResponse(response);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
-      return _networkError("Request timed out. Backend may be down.");
+      return _timeoutError();
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
@@ -205,9 +205,9 @@ class ApiService {
       );
       return _decodeResponse(response);
     } on SocketException {
-      return _networkError("Cannot reach backend at $baseUrl");
+      return _networkError();
     } on TimeoutException {
-      return _networkError("Request timed out. Backend may be down.");
+      return _timeoutError();
     } on HttpException catch (e) {
       return _networkError(e.message);
     } catch (e) {
@@ -223,17 +223,32 @@ class ApiService {
       data = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
       return {
-        "message": "Invalid server response",
+        "message": _friendlyMessage(
+          response.statusCode,
+          "Invalid server response",
+        ),
         "status_code": response.statusCode,
       };
     }
 
     data["status_code"] = response.statusCode;
+    data["message"] = _friendlyMessage(
+      response.statusCode,
+      data["message"]?.toString() ?? "",
+    );
     return data;
   }
 
-  Map<String, dynamic> _networkError(String message) {
+  Map<String, dynamic> _networkError([
+    String message = 'Backend is unreachable. Start the backend and try again.',
+  ]) {
     return {"message": message, "status_code": 0};
+  }
+
+  Map<String, dynamic> _timeoutError() {
+    return _networkError(
+      'The request timed out. Check that the backend is running.',
+    );
   }
 
   Future<Map<String, String>> _authorizedHeaders() async {
@@ -253,14 +268,20 @@ class ApiService {
     if (statusCode == 401) {
       unawaited(AuthController.handleUnauthorized(fromRoute: fromRoute));
       throw UnauthorizedException(
-        _extractMessage(body, 'Authentication required.'),
+        _friendlyMessage(
+          statusCode,
+          _extractMessage(body, 'Authentication required.'),
+        ),
       );
     }
     if (statusCode == 403) {
       throw ForbiddenException(
-        _extractMessage(
-          body,
-          'You do not have permission to access this resource.',
+        _friendlyMessage(
+          statusCode,
+          _extractMessage(
+            body,
+            'You do not have permission to access this resource.',
+          ),
         ),
       );
     }
@@ -273,5 +294,39 @@ class ApiService {
     } catch (_) {
       return fallback;
     }
+  }
+
+  static String _friendlyMessage(int statusCode, String message) {
+    final normalized = message.trim();
+    final lower = normalized.toLowerCase();
+    if (statusCode == 0) {
+      return normalized.isEmpty
+          ? 'Backend is unreachable. Start the backend and try again.'
+          : normalized;
+    }
+    if (statusCode == 401) {
+      if (lower.contains('expired')) {
+        return 'Your session expired. Please sign in again.';
+      }
+      if (lower.contains('invalid email') || lower.contains('password')) {
+        return 'Invalid email or password. Check your details and try again.';
+      }
+      return 'Please sign in again to continue.';
+    }
+    if (statusCode == 403) {
+      return 'You do not have permission to access this page.';
+    }
+    if (statusCode == 400 && lower.contains('user already exists')) {
+      return 'An account with this email already exists. Try signing in.';
+    }
+    if (statusCode == 413 || lower.contains('too large')) {
+      return 'The selected file is too large. Choose a file under 10 MB.';
+    }
+    if (statusCode >= 500) {
+      return 'The server could not complete this request. Try again shortly.';
+    }
+    return normalized.isEmpty
+        ? 'Request failed. Please try again.'
+        : normalized;
   }
 }

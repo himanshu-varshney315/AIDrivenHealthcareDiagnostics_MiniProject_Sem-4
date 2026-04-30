@@ -8,6 +8,7 @@ from database.db import db
 
 
 def configure_cors(app):
+    """Install the configured origin allowlist for browser clients."""
     allowed_origins = os.environ.get(
         "CORS_ORIGINS",
         "http://127.0.0.1:5000,http://localhost:5000,http://127.0.0.1:3000,http://localhost:3000",
@@ -27,6 +28,7 @@ def configure_cors(app):
 
 
 def install_security_headers(app):
+    """Attach defensive headers and shared upload-size error handling."""
     @app.after_request
     def add_security_headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -46,11 +48,13 @@ def install_security_headers(app):
 
 
 def initialize_database():
+    """Create tables and apply lightweight SQLite compatibility migrations."""
     db.create_all()
     ensure_user_columns()
 
 
 def ensure_user_columns():
+    """Backfill user columns for databases created by earlier app versions."""
     columns = _get_table_columns("user")
     if "name" not in columns:
         db.session.execute(

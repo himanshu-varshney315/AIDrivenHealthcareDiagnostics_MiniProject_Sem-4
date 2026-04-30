@@ -118,13 +118,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      icon: Icons.health_and_safety_rounded,
       eyebrow: AppIdentity.appName,
-      title: 'Welcome back to your care timeline',
+      title: 'Welcome back to Ayuva',
       subtitle: AppIdentity.appShortDescription,
       stats: const [
-        AuthStat(label: 'AI review', value: '24/7', tint: AppTheme.blue),
-        AuthStat(label: 'Privacy', value: 'JWT', tint: AppTheme.aqua),
+        AuthStat(label: 'AI review', value: '24/7', tint: AppTheme.aqua),
+        AuthStat(label: 'Privacy', value: 'Secure', tint: AppTheme.blue),
       ],
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -149,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Continue to reports, symptom guidance, and nearby care.',
+              'Continue to your reports, symptom guidance, and care history.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
@@ -206,12 +205,12 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {},
-                child: const Text('Forgot password?'),
+                child: const Text('Forgot password'),
               ),
             ),
             const SizedBox(height: 8),
             if (_statusMessage != null) ...[
-              _AuthStatusBanner(message: _statusMessage!),
+              AuthStatusBanner(message: _statusMessage!),
               const SizedBox(height: 12),
             ],
             SizedBox(
@@ -220,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: isLoading ? null : loginUser,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(58),
-                  backgroundColor: AppTheme.navy,
+                  backgroundColor: AppTheme.clinicalGreen,
                 ),
                 child: isLoading
                     ? const SizedBox(
@@ -273,39 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
       labelText: label,
       hintText: hint,
       prefixIcon: Icon(icon),
-    );
-  }
-}
-
-class _AuthStatusBanner extends StatelessWidget {
-  final String message;
-
-  const _AuthStatusBanner({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF3FF),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline_rounded, color: AppTheme.blue),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

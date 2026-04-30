@@ -250,7 +250,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 14),
-                  _Field(controller: _name, label: 'Full name', icon: Icons.badge),
+                  _Field(
+                    controller: _name,
+                    label: 'Full name',
+                    icon: Icons.badge,
+                  ),
                   _Field(
                     controller: _email,
                     label: 'Email',
@@ -320,7 +324,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     subtitle: 'Analysis status and urgent health alerts',
                     icon: Icons.notifications_rounded,
                     value: _notifications,
-                    onChanged: (value) => setState(() => _notifications = value),
+                    onChanged: (value) =>
+                        setState(() => _notifications = value),
                   ),
                   _SwitchTile(
                     title: 'Doctor sharing',

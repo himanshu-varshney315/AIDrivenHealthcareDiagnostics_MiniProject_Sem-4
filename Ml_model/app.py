@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 
-from Ml_model.predict import analyze_medical_report_text, analyze_symptom_text
+from Ml_model.predict import analyze_medical_image_file_bytes, analyze_medical_report_text, analyze_symptom_text
 from Ml_model.utils.pdf_extractor import extract_text_from_file_bytes, ocr_is_available
 
 
@@ -19,17 +19,22 @@ def analyze_report() -> tuple:
     if not uploaded_file.filename.lower().endswith(supported_extensions):
         return jsonify({"message": "Only PDF, TXT, PNG, JPG, and JPEG files are supported"}), 400
 
+    file_bytes = uploaded_file.read()
     extracted_text = extract_text_from_file_bytes(
-        uploaded_file.read(),
+        file_bytes,
         filename=uploaded_file.filename,
     )
-    if not extracted_text:
+    is_image = uploaded_file.filename.lower().endswith((".png", ".jpg", ".jpeg"))
+    if not extracted_text and not is_image:
         message = "Could not extract text from report"
         if not ocr_is_available():
             message += ". Image and scanned report support requires Tesseract OCR and pytesseract."
         return jsonify({"message": message}), 400
 
-    result = analyze_medical_report_text(extracted_text)
+    if is_image:
+        result = analyze_medical_image_file_bytes(file_bytes, extracted_text=extracted_text)
+    else:
+        result = analyze_medical_report_text(extracted_text)
     return (
         jsonify(
             {
@@ -44,6 +49,8 @@ def analyze_report() -> tuple:
                 "recommended_medicines": result["recommended_medicines"],
                 "seek_care": result["seek_care"],
                 "urgency": result["urgency"],
+                "task": result.get("task", "report"),
+                "image_prediction": result.get("image_prediction"),
             }
         ),
         200,

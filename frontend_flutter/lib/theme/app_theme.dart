@@ -2,36 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color ink = Color(0xFF0F1721);
-  static const Color navy = Color(0xFF15384F);
-  static const Color blue = Color(0xFF2E6DFF);
-  static const Color aqua = Color(0xFF1C9A8B);
-  static const Color coral = Color(0xFFD64545);
-  static const Color amber = Color(0xFFB88A2F);
-  static const Color violet = Color(0xFF677489);
-  static const Color background = Color(0xFFF4F8FB);
-  static const Color backgroundRaised = Color(0xFFEAF2F8);
+  static const Color ink = Color(0xFF0D1B24);
+  static const Color navy = Color(0xFF123247);
+  static const Color blue = Color(0xFF2D6CDF);
+  static const Color aqua = Color(0xFF249B8E);
+  static const Color coral = Color(0xFFD84E4E);
+  static const Color amber = Color(0xFFB7862E);
+  static const Color violet = Color(0xFF657184);
+  static const Color background = Color(0xFFF3F8FA);
+  static const Color backgroundRaised = Color(0xFFE8F1F5);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color softSurface = Color(0xFFF7FBFD);
-  static const Color scrub = Color(0xFFE6F5F1);
-  static const Color sand = Color(0xFFFFF7E6);
+  static const Color softSurface = Color(0xFFF8FBFC);
+  static const Color scrub = Color(0xFFE5F5F1);
+  static const Color sand = Color(0xFFFFF6E3);
   static const Color alertSoft = Color(0xFFFFF1F0);
-  static const Color clinicalGreen = Color(0xFF0B7F6E);
-  static const Color textPrimary = Color(0xFF12212B);
-  static const Color textSecondary = Color(0xFF344A58);
-  static const Color textMuted = Color(0xFF6C7D88);
-  static const Color border = Color(0xFFD5E2EA);
-  static const Color borderStrong = Color(0xFFC2D3DD);
+  static const Color clinicalGreen = Color(0xFF087C70);
+  static const Color textPrimary = Color(0xFF10222D);
+  static const Color textSecondary = Color(0xFF334B58);
+  static const Color textMuted = Color(0xFF697C87);
+  static const Color border = Color(0xFFD7E4EA);
+  static const Color borderStrong = Color(0xFFC4D5DE);
 
   static const List<Color> brandGradient = [
-    Color(0xFF15384F),
-    Color(0xFF0B7F6E),
+    Color(0xFF123247),
+    Color(0xFF087C70),
   ];
 
   static const List<Color> heroGradient = [
-    Color(0xFF183952),
-    Color(0xFF1B5167),
-    Color(0xFF0B7F6E),
+    Color(0xFF123247),
+    Color(0xFF17516A),
+    Color(0xFF087C70),
   ];
 
   static ThemeData get light {
@@ -127,7 +127,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -137,7 +137,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(56),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 15,
@@ -151,7 +151,7 @@ class AppTheme {
           side: const BorderSide(color: borderStrong),
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
@@ -199,19 +199,19 @@ class AppTheme {
           vertical: 18,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: clinicalGreen, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: coral),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: coral, width: 1.5),
         ),
       ),

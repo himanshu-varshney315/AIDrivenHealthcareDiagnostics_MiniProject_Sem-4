@@ -44,6 +44,14 @@ SYMPTOM_KEYWORDS = {
     "diarrhea",
     "diarrhoea",
     "dehydration",
+    "loss of smell",
+    "night sweats",
+    "burning urination",
+    "flank pain",
+    "jaundice",
+    "weight loss",
+    "cold intolerance",
+    "heat intolerance",
 }
 
 DISEASE_KEYWORDS = {
@@ -61,6 +69,18 @@ DISEASE_KEYWORDS = {
     "chikungunya",
     "diarrheal disease",
     "diarrhoeal disease",
+    "covid",
+    "covid-19",
+    "tuberculosis",
+    "malaria",
+    "typhoid",
+    "urinary tract infection",
+    "kidney disease",
+    "renal impairment",
+    "liver disease",
+    "thyroid disorder",
+    "hypothyroidism",
+    "hyperthyroidism",
 }
 
 MEDICATION_KEYWORDS = {
@@ -74,6 +94,10 @@ MEDICATION_KEYWORDS = {
     "salbutamol",
     "albuterol",
     "ors",
+    "levothyroxine",
+    "azithromycin",
+    "ceftriaxone",
+    "artemether",
 }
 
 LAB_PATTERNS = {
@@ -85,6 +109,13 @@ LAB_PATTERNS = {
     "oxygen_saturation": r"(spo2|oxygen saturation)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
     "platelet_count": r"(platelets|platelet count)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
     "hematocrit": r"(hematocrit|hct)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "creatinine": r"(creatinine)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "urea": r"(urea|bun)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "egfr": r"(egfr)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "bilirubin": r"(bilirubin)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "liver_enzymes": r"(sgpt|alt|sgot|ast)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "tsh": r"(tsh)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
+    "thyroid_hormone": r"\b(t3|t4)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)",
 }
 
 

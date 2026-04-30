@@ -102,7 +102,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: gradient == null ? color : null,
         gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: border ?? Border.all(color: AppTheme.border),
         boxShadow: const [
           BoxShadow(
@@ -135,10 +135,10 @@ class AppIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: backgroundColor ?? Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: SizedBox(
           width: 52,
           height: 52,
@@ -196,7 +196,7 @@ class MetricPill extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppTheme.border),
       ),
       child: Row(
@@ -207,7 +207,7 @@ class MetricPill extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -264,13 +264,13 @@ class StoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         width: 138,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppTheme.border),
         ),
         child: Column(
@@ -281,7 +281,7 @@ class StoryChip extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
