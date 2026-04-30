@@ -9,6 +9,11 @@ from database.db import db
 from routes.auth_routes import auth_bp
 from routes.report_routes import report_bp
 from routes.wearable_routes import wearable_bp
+from services.report_analysis_service import (
+    get_ml_api_url,
+    get_ml_request_timeout_seconds,
+    get_ml_symptom_api_url,
+)
 from services.auth_management import bcrypt
 from services.app_bootstrap import configure_cors, initialize_database, install_security_headers
 
@@ -71,6 +76,15 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.get("/health")
     def health_check():
         return {"status": "ok"}, 200
+
+    @app.get("/diagnostics")
+    def diagnostics():
+        return {
+            "status": "ok",
+            "ml_api_url": get_ml_api_url(),
+            "ml_symptom_api_url": get_ml_symptom_api_url(),
+            "ml_request_timeout_seconds": get_ml_request_timeout_seconds(),
+        }, 200
 
     with app.app_context():
         initialize_database()

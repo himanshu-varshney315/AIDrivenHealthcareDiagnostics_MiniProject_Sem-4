@@ -16,4 +16,4 @@ COPY Ml_model /app/Ml_model
 
 EXPOSE 5001
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} Ml_model.app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --timeout 180 Ml_model.app:app"]
