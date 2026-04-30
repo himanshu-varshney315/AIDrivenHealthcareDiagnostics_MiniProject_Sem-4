@@ -15,7 +15,9 @@ backend/.env
 frontend_flutter/.env
 
 # Local backend runtime data
+instance/database.db
 backend/instance/database.db
+backend/instance/.jwt_secret
 backend/uploads/
 
 # OS/editor noise
