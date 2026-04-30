@@ -11,6 +11,7 @@ import 'auth_service.dart';
 class ApiService {
   final String baseUrl = _resolveBaseUrl();
   static const Duration _requestTimeout = Duration(seconds: 12);
+  static const Duration _analysisTimeout = Duration(seconds: 180);
 
   static String _resolveBaseUrl() {
     if (kIsWeb) {
@@ -98,7 +99,7 @@ class ApiService {
 
       request.files.add(await http.MultipartFile.fromPath("file", file.path));
 
-      var response = await request.send().timeout(_requestTimeout);
+      var response = await request.send().timeout(_analysisTimeout);
       var responseData = await response.stream.bytesToString();
 
       _throwForProtectedStatus(
@@ -142,7 +143,7 @@ class ApiService {
             headers: {...headers, "Content-Type": "application/json"},
             body: jsonEncode({"symptoms_text": symptomsText}),
           )
-          .timeout(_requestTimeout);
+          .timeout(_analysisTimeout);
 
       _throwForProtectedStatus(
         response.statusCode,

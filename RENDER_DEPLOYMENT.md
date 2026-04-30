@@ -15,8 +15,10 @@ This repo includes a `render.yaml` Blueprint with two Docker web services:
 6. Apply the Blueprint.
 
 Render will build both Docker services. The backend receives a generated
-`JWT_SECRET_KEY` and connects to the ML service through Render's private
-service host/port.
+`JWT_SECRET_KEY` and connects to the ML service through the public
+`https://ayuva-ml.onrender.com` URL. This is intentional for the free plan:
+Render free web services can send private network requests, but they cannot
+receive them.
 
 ## After Deploy
 
@@ -37,6 +39,8 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://ayuva-backe
 
 - The current Blueprint uses Render's free plan.
 - Free services can spin down when idle, so the first request after inactivity can be slow.
+- Keep `ML_API_URL` and `ML_SYMPTOM_API_URL` configured on `ayuva-backend`.
+  On Render's free plan, do not rely on `ML_SERVICE_HOSTPORT` for the ML service.
 - The SQLite database is stored on ephemeral container storage at `/tmp/ayuva/database.db`.
   Data can be lost after redeploys or restarts. For real production use, move persistence
   to Render Postgres or attach a persistent disk on a paid plan.

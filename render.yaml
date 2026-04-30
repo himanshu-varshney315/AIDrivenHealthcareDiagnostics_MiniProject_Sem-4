@@ -25,8 +25,9 @@ services:
         value: "10485760"
       - key: DATABASE_PATH
         value: /tmp/ayuva/database.db
-      - key: ML_SERVICE_HOSTPORT
-        fromService:
-          type: web
-          name: ayuva-ml
-          property: hostport
+      - key: ML_API_URL
+        value: https://ayuva-ml.onrender.com/analyze-report
+      - key: ML_SYMPTOM_API_URL
+        value: https://ayuva-ml.onrender.com/analyze-symptoms
+      - key: ML_REQUEST_TIMEOUT_SECONDS
+        value: "120"

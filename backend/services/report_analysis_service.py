@@ -13,6 +13,7 @@ from models.user_model import User
 
 DEFAULT_ML_API_URL = "http://127.0.0.1:5001/analyze-report"
 DEFAULT_ML_SYMPTOM_API_URL = "http://127.0.0.1:5001/analyze-symptoms"
+DEFAULT_ML_REQUEST_TIMEOUT_SECONDS = 120
 MAX_REPORT_BYTES = 10 * 1024 * 1024
 SUPPORTED_REPORT_EXTENSIONS = {"pdf", "txt", "png", "jpg", "jpeg"}
 
@@ -323,21 +324,39 @@ def normalize_analysis_result(result):
 
 def get_ml_api_url():
     """Return the report-analysis ML URL from env or the local development default."""
+    configured = os.environ.get("ML_API_URL", "").strip()
+    if configured:
+        return configured
+
     service_hostport = os.environ.get("ML_SERVICE_HOSTPORT", "").strip()
     if service_hostport:
         return f"http://{service_hostport}/analyze-report"
 
-    return os.environ.get("ML_API_URL", DEFAULT_ML_API_URL).strip() or DEFAULT_ML_API_URL
+    return DEFAULT_ML_API_URL
 
 
 def get_ml_symptom_api_url():
     """Return the symptom-analysis ML URL from env or the local development default."""
+    configured = os.environ.get("ML_SYMPTOM_API_URL", "").strip()
+    if configured:
+        return configured
+
     service_hostport = os.environ.get("ML_SERVICE_HOSTPORT", "").strip()
     if service_hostport:
         return f"http://{service_hostport}/analyze-symptoms"
 
-    configured = os.environ.get("ML_SYMPTOM_API_URL", DEFAULT_ML_SYMPTOM_API_URL)
-    return configured.strip() or DEFAULT_ML_SYMPTOM_API_URL
+    return DEFAULT_ML_SYMPTOM_API_URL
+
+
+def get_ml_request_timeout_seconds():
+    """Return the ML request timeout, allowing slow free-tier cold starts."""
+    configured = os.environ.get("ML_REQUEST_TIMEOUT_SECONDS", "").strip()
+    if not configured:
+        return DEFAULT_ML_REQUEST_TIMEOUT_SECONDS
+    try:
+        return max(10, int(configured))
+    except ValueError:
+        return DEFAULT_ML_REQUEST_TIMEOUT_SECONDS
 
 
 def analyze_symptoms_locally(symptoms_text):
@@ -357,7 +376,10 @@ def analyze_symptoms_locally(symptoms_text):
 
 def _send_request(outgoing_request):
     try:
-        with urllib_request.urlopen(outgoing_request, timeout=30) as response:
+        with urllib_request.urlopen(
+            outgoing_request,
+            timeout=get_ml_request_timeout_seconds(),
+        ) as response:
             payload = response.read().decode("utf-8")
     except error.HTTPError as exc:
         payload = exc.read().decode("utf-8", errors="replace")
