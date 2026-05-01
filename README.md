@@ -191,6 +191,7 @@ CI runs backend tests, ML smoke tests, Python lint, `flutter analyze`, and `flut
 - The admin overview endpoint is ready for future dashboard/admin UI expansion
 - Local development uses SQLite for simplicity
 - Backend runtime data now lives consistently under `backend/instance/`
+- In production, set `DATABASE_URL` to a managed Postgres or MySQL database to avoid ephemeral SQLite storage
 - Training writes model lifecycle metadata to `Ml_model/models/metrics.json`
 
 ## Known Limitations

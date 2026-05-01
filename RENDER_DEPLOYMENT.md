@@ -1,8 +1,9 @@
 # Deploy Ayuva on Render
 
-This repo includes a `render.yaml` Blueprint with two Docker web services:
+This repo includes a `render.yaml` Blueprint with three services:
 
 - `ayuva-ml`: ML analysis API
+- `ayuva-db`: Managed Postgres database
 - `ayuva-backend`: Flask API used by the Flutter app
 
 ## Deploy
@@ -41,8 +42,7 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://ayuva-backe
 - Free services can spin down when idle, so the first request after inactivity can be slow.
 - Keep `ML_API_URL` and `ML_SYMPTOM_API_URL` configured on `ayuva-backend`.
   On Render's free plan, do not rely on `ML_SERVICE_HOSTPORT` for the ML service.
-- The SQLite database is stored on ephemeral container storage at `/tmp/ayuva/database.db`.
-  Data can be lost after redeploys or restarts. For real production use, move persistence
-  to Render Postgres or attach a persistent disk on a paid plan.
+- The Blueprint now includes a managed Postgres database (`ayuva-db`) for persistent data storage.
+  User accounts and analysis history will survive redeploys and restarts.
 - The ML service installs Torch and Transformers, so the first build can take a while.
   If the free plan runs out of memory, change `ayuva-ml` from `free` to a larger plan.

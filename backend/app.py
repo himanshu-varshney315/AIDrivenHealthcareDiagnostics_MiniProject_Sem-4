@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from config import get_jwt_secret_key
+from config import get_database_uri, get_jwt_secret_key
 from database.db import db
 from routes.auth_routes import auth_bp
 from routes.report_routes import report_bp
@@ -42,14 +42,7 @@ def configure_jwt_callbacks(jwt: JWTManager) -> None:
 
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
-    instance_dir = Path(app.instance_path)
-    instance_dir.mkdir(parents=True, exist_ok=True)
-    database_path = Path(
-        os.environ.get("DATABASE_PATH", str(instance_dir / "database.db"))
-    )
-    database_path.parent.mkdir(parents=True, exist_ok=True)
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{database_path.as_posix()}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri()
     app.config["MAX_CONTENT_LENGTH"] = int(
         os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))
     )
