@@ -60,6 +60,8 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     if not app.config.get("JWT_SECRET_KEY"):
         app.config["JWT_SECRET_KEY"] = get_jwt_secret_key()
+    if "JWT_ACCESS_TOKEN_EXPIRES" not in app.config:
+        app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
 
     configure_cors(app)
     install_security_headers(app)
