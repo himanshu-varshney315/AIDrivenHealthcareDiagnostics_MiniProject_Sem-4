@@ -8,7 +8,7 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: commit
 
-  - type: pgsql
+  - type: postgres
     name: ayuva-db
     plan: free
     # Note: Render free Postgres has 750MB limit, upgrade for more storage
